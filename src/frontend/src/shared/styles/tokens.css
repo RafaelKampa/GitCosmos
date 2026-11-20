@@ -1,0 +1,131 @@
+/* Source palettes: .agents/GitCosmos-Cosmic-{Dark,Light}-Design-System.md.
+   Keep custom colors here; components and PrimeVue consume semantic aliases. */
+:root {
+  --gc-white: #FFFFFF;
+  --color-neutral-0: var(--gc-white);
+  --color-neutral-50: #F8FAFF;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #202B45;
+  --color-neutral-900: #10172A;
+  --color-neutral-950: #090D1B;
+
+  /* Cosmic Dark is the default, including before Vue mounts. */
+  color-scheme: dark;
+  --gc-bg: #090D1B;
+  --gc-sidebar: #10172A;
+  --gc-header: var(--gc-sidebar);
+  --gc-surface: #172036;
+  --gc-surface-raised: #202B45;
+  --gc-border: #334155;
+  --gc-divider: var(--gc-border);
+  --gc-text: #F1F5F9;
+  --gc-text-secondary: #94A3B8;
+  --gc-text-muted: #94A3B8;
+  --gc-text-disabled: #64748B;
+  --gc-primary: #3B82F6;
+  --gc-brand: #EA580C;
+  --gc-heading-h1: var(--gc-brand);
+  --gc-brand-on-dark: #FB923C;
+  --gc-violet: #8B5CF6;
+  --gc-cyan: #22D3EE;
+
+  --gc-success: #34D399;
+  --gc-warning: #FBBF24;
+  --gc-danger: #F87171;
+  --gc-info: #60A5FA;
+  --gc-running: #A78BFA;
+  --gc-inactive: #94A3B8;
+  /* Dark badge backgrounds are derived from the documented colors. */
+  --gc-success-bg: color-mix(in srgb, var(--gc-success) 15%, var(--gc-surface));
+  --gc-warning-bg: color-mix(in srgb, var(--gc-warning) 15%, var(--gc-surface));
+  --gc-danger-bg: color-mix(in srgb, var(--gc-danger) 15%, var(--gc-surface));
+  --gc-info-bg: color-mix(in srgb, var(--gc-info) 15%, var(--gc-surface));
+  --gc-running-bg: color-mix(in srgb, var(--gc-running) 15%, var(--gc-surface));
+  --gc-inactive-bg: var(--gc-surface-raised);
+
+  --gc-primary-hover: color-mix(in srgb, var(--gc-primary) 90%, var(--gc-text));
+  --gc-primary-active: color-mix(in srgb, var(--gc-primary) 80%, var(--gc-text));
+  /* Deep navy text has stronger contrast on the specified dark-theme blue. */
+  --gc-on-primary: var(--gc-bg);
+  --gc-selection-bg: color-mix(in srgb, var(--gc-violet) 15%, var(--gc-surface));
+  --gc-selection-focus: color-mix(in srgb, var(--gc-violet) 25%, var(--gc-surface));
+  --gc-selection-text: var(--gc-text);
+
+  /* Shared aliases resolve against the active Cosmic palette. */
+  --color-page: var(--gc-bg);
+  --color-header: var(--gc-header);
+  --color-surface: var(--gc-surface);
+  --color-surface-hover: var(--gc-surface-raised);
+  --color-text: var(--gc-text);
+  --color-text-muted: var(--gc-text-secondary);
+  --color-border: var(--gc-border);
+  --color-divider: var(--gc-divider);
+  --color-action: var(--gc-primary);
+  --color-action-hover: var(--gc-primary-hover);
+  --color-action-active: var(--gc-primary-active);
+  --color-on-action: var(--gc-on-primary);
+  --color-focus-ring: var(--gc-violet);
+  --color-selection: var(--gc-selection-bg);
+  --color-selection-focus: var(--gc-selection-focus);
+  --color-selection-text: var(--gc-selection-text);
+  --color-danger: var(--gc-danger);
+
+  /* PrimeVue tonal scale derived from the approved primary color. */
+  --color-primary-50: color-mix(in srgb, var(--gc-primary) 5%, var(--gc-white));
+  --color-primary-100: color-mix(in srgb, var(--gc-primary) 10%, var(--gc-white));
+  --color-primary-200: color-mix(in srgb, var(--gc-primary) 25%, var(--gc-white));
+  --color-primary-300: color-mix(in srgb, var(--gc-primary) 45%, var(--gc-white));
+  --color-primary-400: color-mix(in srgb, var(--gc-primary) 70%, var(--gc-white));
+  --color-primary-500: var(--gc-primary);
+  --color-primary-600: color-mix(in srgb, var(--gc-primary) 90%, var(--color-neutral-950));
+  --color-primary-700: color-mix(in srgb, var(--gc-primary) 75%, var(--color-neutral-950));
+  --color-primary-800: color-mix(in srgb, var(--gc-primary) 60%, var(--color-neutral-950));
+  --color-primary-900: color-mix(in srgb, var(--gc-primary) 45%, var(--color-neutral-950));
+  --color-primary-950: color-mix(in srgb, var(--gc-primary) 25%, var(--color-neutral-950));
+}
+
+:root[data-theme='cosmic-light'] {
+  color-scheme: light;
+  --gc-bg: #F8FAFF;
+  --gc-sidebar: #EEF2FF;
+  --gc-header: var(--gc-surface);
+  --gc-surface: #FFFFFF;
+  --gc-surface-raised: #F1F5F9;
+  --gc-border: #CBD5E1;
+  --gc-divider: #E2E8F0;
+  --gc-text: #0F172A;
+  --gc-text-secondary: #475569;
+  --gc-text-muted: #64748B;
+  --gc-text-disabled: var(--gc-text-muted);
+  --gc-primary: #2563EB;
+  --gc-brand: #EA580C;
+  --gc-brand-on-dark: var(--gc-brand);
+  --gc-violet: #7C3AED;
+  --gc-cyan: #0891B2;
+
+  --gc-success: #15803D;
+  --gc-success-bg: #DCFCE7;
+  --gc-warning: #A16207;
+  --gc-warning-bg: #FEF3C7;
+  --gc-danger: #DC2626;
+  --gc-danger-bg: #FEE2E2;
+  --gc-info: #1D4ED8;
+  --gc-info-bg: #DBEAFE;
+  --gc-running: #7C3AED;
+  --gc-running-bg: #EDE9FE;
+  --gc-inactive: #475569;
+  --gc-inactive-bg: #F1F5F9;
+
+  --gc-primary-hover: color-mix(in srgb, var(--gc-primary) 90%, var(--gc-text));
+  --gc-primary-active: color-mix(in srgb, var(--gc-primary) 80%, var(--gc-text));
+  --gc-on-primary: var(--gc-white);
+  --gc-selection-bg: var(--gc-running-bg);
+  --gc-selection-focus: color-mix(in srgb, var(--gc-violet) 20%, var(--gc-surface));
+  --gc-selection-text: var(--gc-violet);
+}

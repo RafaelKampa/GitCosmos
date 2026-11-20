@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/backend/">
+    <Project Path="src/backend/GitCosmos.API/GitCosmos.API.csproj" />
+    <Project Path="src/backend/GitCosmos.Application/GitCosmos.Application.csproj" />
+    <Project Path="src/backend/GitCosmos.Domain/GitCosmos.Domain.csproj" />
+    <Project Path="src/backend/GitCosmos.Infrastructure/GitCosmos.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GitCosmos.Application.Tests/GitCosmos.Application.Tests.csproj" />
+  </Folder>
+</Solution>

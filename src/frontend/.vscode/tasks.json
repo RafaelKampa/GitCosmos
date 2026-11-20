@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "GitCosmos: start Vite",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "windows": { "command": "npm.cmd" },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "NO_COLOR": "1" }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE v",
+          "endsPattern": "Local:.*http://127\\.0\\.0\\.1:5173/"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "clear": true
+      },
+      "runOptions": { "instanceLimit": 1 }
+    }
+  ]
+}

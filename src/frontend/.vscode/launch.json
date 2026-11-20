@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "GitCosmos: Frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "skipFiles": ["**/node_modules/**"],
+      "preLaunchTask": "GitCosmos: start Vite"
+    },
+    {
+      "name": "GitCosmos: Frontend (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "skipFiles": ["**/node_modules/**"],
+      "preLaunchTask": "GitCosmos: start Vite"
+    },
+    {
+      "name": "GitCosmos: Frontend (Chrome, Vite already running)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "skipFiles": ["**/node_modules/**"]
+    },
+    {
+      "name": "GitCosmos: Frontend (Edge, Vite already running)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "skipFiles": ["**/node_modules/**"]
+    }
+  ]
+}

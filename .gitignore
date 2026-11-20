@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/coverage/
+**/TestResults/
+artifacts/
+src/frontend/dist/
+src/backend/GitCosmos.API/wwwroot/
+*.db
+*.db-shm
+*.db-wal
+.vs/
+.idea/
+.env.local
+*.user

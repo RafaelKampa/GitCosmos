@@ -1,0 +1,15 @@
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[GitCosmos.*]*</Include>
+          <Exclude>[GitCosmos.Application.Tests]*</Exclude>
+          <!-- OpenAPI source-generator output only; handwritten API code remains included. -->
+          <ExcludeByFile>**/obj/**/*.generated.cs</ExcludeByFile>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
