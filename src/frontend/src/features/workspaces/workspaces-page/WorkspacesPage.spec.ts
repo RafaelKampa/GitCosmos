@@ -34,6 +34,7 @@ describe('workspaces page', () => {
   afterEach(() => { wrapper?.unmount(); wrapper = undefined; vi.unstubAllGlobals(); });
   function render() {
     wrapper = mount(WorkspacesPage, { global: { plugins: [PrimeVue], stubs: {
+      RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' },
       Button: { props: ['label', 'disabled'], template: '<button :disabled="disabled">{{ label }}</button>' },
       Dialog: { props: ['visible', 'header', 'closable'], emits: ['update:visible'], template: '<div v-if="visible"><h3>{{ header }}</h3><slot /></div>' },
     } } });
@@ -41,6 +42,12 @@ describe('workspaces page', () => {
   }
   function submit(page: VueWrapper, name = 'Team') {
     page.getComponent(WorkspaceCreateForm).vm.$emit('create', name);
+  }
+  function rowAction(page: VueWrapper, key: 'renameWorkspace' | 'deleteWorkspace' | 'workspaceRepositories') {
+    const label = useLanguageStore().t(key);
+    const button = page.findAll('.workspace-row-actions button').find(action => action.text() === label);
+    if (!button) throw new Error('Workspace action not found: ' + label);
+    return button;
   }
 
   it('uses the selected language for real API calls', async () => {
@@ -69,6 +76,8 @@ describe('workspaces page', () => {
       .mockResolvedValueOnce(listing()).mockResolvedValueOnce(listing(1)).mockResolvedValueOnce(listing());
     const page = render(); await flushPromises();
     expect(page.get('h2').text()).toBe('Team');
+    expect(page.get('.workspace-dashboard-link').attributes('href')).toBe('/workspaces/1');
+    expect(page.get('.workspace-dashboard-link').text()).toBe('Abrir dashboard');
     expect(page.get('li p').text()).toContain('0');
     expect(page.get('nav button:first-child').attributes('disabled')).toBeDefined();
     await page.get('nav button:last-child').trigger('click'); await flushPromises();
@@ -164,7 +173,7 @@ describe('workspaces page', () => {
     const update = vi.spyOn(WorkspaceApiService.prototype, 'updateWorkspace')
       .mockRejectedValueOnce(new ApiError('Duplicate name')).mockResolvedValue(created);
     const page = render(); await flushPromises();
-    await page.get('.workspace-row-actions button:first-child').trigger('click');
+    await rowAction(page, 'renameWorkspace').trigger('click');
     let dialog = page.getComponent(WorkspaceActionDialog);
     expect(dialog.props('mode')).toBe('rename');
     await dialog.get('input').setValue('  New Team  ');
@@ -184,14 +193,14 @@ describe('workspaces page', () => {
     const update = vi.spyOn(WorkspaceApiService.prototype, 'updateWorkspace');
     const remove = vi.spyOn(WorkspaceApiService.prototype, 'deleteWorkspace');
     const page = render(); await flushPromises();
-    await page.get('.workspace-row-actions button:first-child').trigger('click');
+    await rowAction(page, 'renameWorkspace').trigger('click');
     await page.getComponent(WorkspaceActionDialog).get('input').setValue('Discard');
     page.getComponent(WorkspaceActionDialog).vm.$emit('cancel'); await flushPromises();
     expect(page.findComponent(WorkspaceActionDialog).exists()).toBe(false);
-    await page.get('.workspace-row-actions button:first-child').trigger('click');
+    await rowAction(page, 'renameWorkspace').trigger('click');
     expect(page.getComponent(WorkspaceActionDialog).get<HTMLInputElement>('input').element.value).toBe('Team');
     page.getComponent(WorkspaceActionDialog).vm.$emit('cancel'); await flushPromises();
-    await page.get('.workspace-row-actions button:last-child').trigger('click');
+    await rowAction(page, 'deleteWorkspace').trigger('click');
     expect(page.getComponent(WorkspaceActionDialog).props('mode')).toBe('delete');
     page.getComponent(WorkspaceActionDialog).vm.$emit('cancel'); await flushPromises();
     expect(update).not.toHaveBeenCalled();
@@ -204,7 +213,7 @@ describe('workspaces page', () => {
     const pending = deferred<CustomResponse<number>>();
     const remove = vi.spyOn(WorkspaceApiService.prototype, 'deleteWorkspace').mockReturnValue(pending.promise);
     const page = render(); await flushPromises();
-    await page.get('.workspace-row-actions button:last-child').trigger('click');
+    await rowAction(page, 'deleteWorkspace').trigger('click');
     const dialog = page.getComponent(WorkspaceActionDialog);
     expect(remove).not.toHaveBeenCalled();
     await dialog.get('form').trigger('submit'); await flushPromises();
@@ -213,7 +222,7 @@ describe('workspaces page', () => {
     dialog.vm.$emit('cancel'); dialog.vm.$emit('delete'); await flushPromises();
     expect(page.findComponent(WorkspaceActionDialog).exists()).toBe(true);
     expect(remove).toHaveBeenCalledTimes(1);
-    expect(page.get('.workspace-row-actions button:first-child').attributes('disabled')).toBeDefined();
+    expect(rowAction(page, 'renameWorkspace').attributes('disabled')).toBeDefined();
     pending.resolve({ success: true, result: 1, messages: ['Deleted'], errors: [] }); await flushPromises();
     expect(page.findComponent(WorkspaceActionDialog).exists()).toBe(false);
     expect(page.text()).toContain('Você ainda não possui workspaces');
@@ -225,7 +234,7 @@ describe('workspaces page', () => {
     vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces').mockResolvedValue(listing());
     vi.spyOn(WorkspaceApiService.prototype, 'deleteWorkspace').mockRejectedValue(failure);
     const page = render(); await flushPromises();
-    await page.get('.workspace-row-actions button:last-child').trigger('click');
+    await rowAction(page, 'deleteWorkspace').trigger('click');
     const dialog = page.getComponent(WorkspaceActionDialog);
     await dialog.get('form').trigger('submit'); await flushPromises();
     expect(dialog.props('busy')).toBe(false);
@@ -240,7 +249,7 @@ describe('workspaces page', () => {
     const update = vi.spyOn(WorkspaceApiService.prototype, 'updateWorkspace').mockReturnValue(renameRequest.promise);
     const remove = vi.spyOn(WorkspaceApiService.prototype, 'deleteWorkspace').mockReturnValue(deleteRequest.promise);
     const page = render(); await flushPromises();
-    await page.get(mode === 'rename' ? '.workspace-row-actions button:first-child' : '.workspace-row-actions button:last-child').trigger('click');
+    await rowAction(page, mode === 'rename' ? 'renameWorkspace' : 'deleteWorkspace').trigger('click');
     await page.getComponent(WorkspaceActionDialog).get('form').trigger('submit'); await flushPromises();
     page.unmount(); wrapper = undefined;
     if (mode === 'rename') {
@@ -258,7 +267,7 @@ describe('workspaces page', () => {
     const list = vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces').mockResolvedValue(listing());
     vi.spyOn(WorkspaceRepositoryApiService.prototype, 'getRepositories').mockResolvedValue({ success: true, result: [], errors: [], messages: [] });
     const page = render(); await flushPromises();
-    const manage = page.findAll('.workspace-row-actions button').find(button => button.text() === 'Repositórios')!;
+    const manage = rowAction(page, 'workspaceRepositories');
     await manage.trigger('click'); await flushPromises();
     const dialog = page.getComponent(WorkspaceRepositoriesDialog);
     expect(dialog.props('workspace')).toEqual(workspace);

@@ -5,8 +5,8 @@ import { ApiError } from './api-error';
 export class ApiBaseService {
   constructor(private readonly language: () => string, private readonly translate: (key: TranslationKey) => string) {}
 
-  async get<T>(path: string, signal?: AbortSignal): Promise<CustomResponse<T>> {
-    return this.request<T>(path, {}, signal);
+  async get<T>(path: string, signal?: AbortSignal, timeoutMilliseconds: number | null = 30_000): Promise<CustomResponse<T>> {
+    return this.request<T>(path, {}, signal, timeoutMilliseconds);
   }
 
   async post<T>(path: string, data: unknown, signal?: AbortSignal, timeoutMilliseconds: number | null = 30_000): Promise<CustomResponse<T>> {

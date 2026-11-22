@@ -48,4 +48,12 @@ it('boots the application, loads its route and changes language through the sele
   await router.push('/workspaces'); await flushPromises();
   expect(document.querySelector('h1')!.textContent).toBe('Workspaces');
   expect(document.body.textContent).toContain('Aún no tiene workspaces');
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({
+    success: true, result: { workspaceId: 1, name: 'Team', checkedAt: '2026-11-22T12:00:00Z', repositories: [] }, messages: [], errors: [],
+  })));
+  await router.push('/workspaces/1'); await flushPromises();
+  expect(document.querySelector('h1')!.textContent).toBe('Dashboard del workspace — Team');
+  expect(fetch).toHaveBeenLastCalledWith('/api/WorkspaceDashboard/GetDashboard?workspaceId=1',
+    expect.objectContaining({ headers: { 'Accept-Language': 'es' } }));
+  expect(document.body.textContent).toContain('Este workspace aún no tiene repositorios');
 }, 60_000);

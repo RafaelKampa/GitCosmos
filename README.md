@@ -2,7 +2,7 @@
 
 Um cliente Git local para gerenciar repositórios independentes em um workspace unificado.
 
-As Milestones 1 e 2 foram validadas pelo usuário. A seleção nativa de pastas e a clonagem de repositórios estão implementadas e aguardam execução manual dos novos testes e cobertura.
+As Milestones 1 e 2, incluindo seleção nativa, clonagem e adição automática de repositórios, foram validadas pelos testes manuais do usuário. A Milestone 3 está em andamento: seu primeiro incremento implementa o dashboard com branch e estado local dos arquivos, aguardando novos testes e cobertura.
 
 ## Requisitos
 
@@ -129,6 +129,20 @@ Endpoints adicionais, com mensagens em pt-BR, es e en e documentação no Scalar
 - `POST /api/RepositoryClone/CloneRepository`: mesmos campos, mais `destinationPath` exatamente como recebido na revisão; clona e cria o vínculo.
 
 Não há nova migration nem dependência de pacote para essas melhorias. Os novos testes usam repositórios temporários locais e não clonam a URL de exemplo. A validação manual deve conferir a seleção/cancelamento de pastas, a revisão do destino, a clonagem e a rejeição de uma pasta final já existente.
+## Dashboard do workspace — Milestone 3
+
+Na lista de workspaces, clique em **Abrir dashboard**. A página `/workspaces/{id}` mostra o nome do workspace e um card por repositório, com nome, caminho, branch atual e estado **Limpo**, **Com alterações**, **Com conflitos** ou **Indisponível**. HEAD destacado e repositórios sem commits são identificados explicitamente.
+
+Os cards mostram contagens de arquivos alterados, modificados, adicionados, excluídos, renomeados, não rastreados e em conflito, além de preparados/não preparados para commit. O total de alterados conta cada entrada Git uma vez; as categorias podem se sobrepor (por exemplo, um arquivo pode estar preparado e também ter novas modificações). Cópias são contabilizadas como adições; alterações de tipo como modificações. Arquivos ignorados não entram na contagem; submódulos aparecem como entradas do repositório principal.
+
+A consulta usa [`git status --porcelain=v2 -z`](https://git-scm.com/docs/git-status), com nomes separados por NUL e detecção de renomeações, sem editar arquivos, atualizar o índice ou acessar remotes. As consultas são sequenciais por workspace, com no máximo duas leituras de estado simultâneas no processo da API. Cada comando mantém o timeout de 10 segundos; o cliente não aplica timeout fixo ao conjunto e cancela a requisição ao sair da página ou trocar workspace/idioma. Uma pasta removida, movida ou que deixou de ser raiz Git aparece indisponível sem ocultar os demais repositórios.
+
+Clique em **Atualizar estado** para consultar novamente após alterações externas. Não há atualização em tempo real neste incremento. As mensagens de erro são localizadas em pt-BR/es/en. A navegação de retorno permite gerenciar os vínculos pelo fluxo existente.
+
+Endpoint no Scalar: `GET /api/WorkspaceDashboard/GetDashboard?workspaceId=1`, retornando `CustomResponse<WorkspaceDashboardResponse>` com identificação do workspace, instante de conclusão da leitura (`checkedAt`) e resultados por repositório. IDs inválidos retornam 400 e workspaces inexistentes/inativos retornam 404. Sem nova migration ou dependência.
+
+Os testes preparados cobrem parsing, Git real em diretórios temporários (incluindo preservação do índice), disponibilidade parcial, validações, cancelamento, contratos HTTP, componentes e navegação. Execute-os manualmente com o script indicado abaixo. Para validar visualmente, abra um workspace com repositórios limpos, alterados e um caminho indisponível; confira branch, contagens, atualização e os dois temas. Histórico de commits e visualização de diferenças permanecem como próximos incrementos da Milestone 3.
+
 ## Marca e temas
 
 A logo PNG fornecida é exibida no cabeçalho a partir de `src/frontend/src/shared/assets/branding`, preservando sua transparência e sem fundo aplicado por CSS. O favicon e o ícone para dispositivos Apple usam o PNG transparente de `src/frontend/public`. As versões SVG permanecem disponíveis nos assets originais, sem uso na interface atual.

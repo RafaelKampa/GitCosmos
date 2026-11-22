@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import Button from 'primevue/button';
+import { RouterLink } from 'vue-router';
 import WorkspaceCreateForm from '../workspace-create-form/WorkspaceCreateForm.vue';
 import WorkspaceActionDialog from '../workspace-action-dialog/WorkspaceActionDialog.vue';
 import WorkspaceRepositoriesDialog from '../workspace-repositories-dialog/WorkspaceRepositoriesDialog.vue';
@@ -119,6 +120,7 @@ onUnmounted(() => { listRequest?.abort(); saveRequest?.abort(); });
             <p>{{ i18n.t('workspaceRepositoryCount') }}: {{ workspace.repositoryCount }}</p>
           </div>
           <div class="workspace-row-actions" role="group" :aria-label="i18n.t('workspaceActions') + ': ' + workspace.name">
+            <RouterLink class="workspace-dashboard-link" :to="'/workspaces/' + workspace.id">{{ i18n.t('dashboardOpen') }}</RouterLink>
             <Button :label="i18n.t('renameWorkspace')" severity="secondary" :disabled="saving"
               @click="openAction(workspace, 'rename')" />
             <Button :label="i18n.t('workspaceRepositories')" severity="secondary" :disabled="saving"
@@ -148,6 +150,7 @@ onUnmounted(() => { listRequest?.abort(); saveRequest?.abort(); });
 .workspace-summary { min-width: 0; }
 .workspace-list p { color: var(--gc-text-muted); margin-bottom: 0; }
 .workspace-row-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.workspace-dashboard-link { align-self: center; color: var(--gc-primary); }
 .workspace-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; }
 .workspace-feedback { margin-block: 1rem; }
 </style>

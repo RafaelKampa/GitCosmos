@@ -6,5 +6,6 @@ export const router = createRouter({
   routes: [{ path: '/', component: ApplicationLayout, children: [
     { path: '', component: () => import('../features/home/home-page/HomePage.vue') },
     { path: 'workspaces', component: () => import('../features/workspaces/workspaces-page/WorkspacesPage.vue') },
+    { path: 'workspaces/:id', component: () => import('../features/workspaces/workspace-dashboard/WorkspaceDashboard.vue'), props: route => ({ workspaceId: Number(route.params.id) }) },
   ] }],
 });

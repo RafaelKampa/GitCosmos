@@ -17,6 +17,7 @@ public static class DependencyInjection
             .AddScoped<IRepositoryLinkRepository, Repositories.RepositoryLinkRepository>()
             .AddSingleton<IGitProcessRunner>(_ => new GitProcessRunner("git", TimeSpan.FromSeconds(10)))
             .AddScoped<IGitRepositoryInspector, GitRepositoryInspector>()
+            .AddScoped<IRepositoryStatusReader, RepositoryStatusReader>()
             .AddSingleton<IWindowsFolderDialogFactory, WindowsFolderDialogFactory>()
             .AddSingleton<ILocalFolderPicker, WindowsFolderPicker>()
             .AddSingleton<IChildFolderReader, ChildFolderReader>()

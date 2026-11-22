@@ -9,6 +9,9 @@ public static class LocalizedText
         ["pt-BR"] = new()
         {
             ["system.ready"] = "O GitCosmos está pronto para iniciar.",
+            ["dashboard.invalid_status"] = "O Git retornou um estado de repositório inválido.",
+            ["dashboard.root_changed"] = "A pasta vinculada deixou de ser a raiz do repositório. Verifique o caminho local.",
+            ["dashboard.status_failed"] = "Não foi possível consultar o estado Git deste repositório.",
             ["import.unreadable"] = "Não foi possível ler as subpastas. Verifique o caminho e as permissões.",
             ["import.not_root"] = "Ignorada: esta pasta não é a raiz de um repositório Git.",
             ["import.added"] = "Repositório identificado e adicionado.",
@@ -54,6 +57,9 @@ public static class LocalizedText
         ["es"] = new()
         {
             ["system.ready"] = "GitCosmos está listo para comenzar.",
+            ["dashboard.invalid_status"] = "Git devolvió un estado de repositorio inválido.",
+            ["dashboard.root_changed"] = "La carpeta vinculada ya no es la raíz del repositorio. Revise la ruta local.",
+            ["dashboard.status_failed"] = "No se pudo consultar el estado Git de este repositorio.",
             ["import.unreadable"] = "No se pudieron leer las subcarpetas. Revise la ruta y los permisos.",
             ["import.not_root"] = "Ignorada: esta carpeta no es la raíz de un repositorio Git.",
             ["import.added"] = "Repositorio identificado y añadido.",
@@ -99,6 +105,9 @@ public static class LocalizedText
         ["en"] = new()
         {
             ["system.ready"] = "GitCosmos is ready to start.",
+            ["dashboard.invalid_status"] = "Git returned an invalid repository status.",
+            ["dashboard.root_changed"] = "The linked folder is no longer the repository root. Check its local path.",
+            ["dashboard.status_failed"] = "Could not read the Git status of this repository.",
             ["import.unreadable"] = "Could not read child folders. Check the path and permissions.",
             ["import.not_root"] = "Ignored: this folder is not a Git repository root.",
             ["import.added"] = "Repository identified and added.",
