@@ -5,5 +5,6 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [{ path: '/', component: ApplicationLayout, children: [
     { path: '', component: () => import('../features/home/home-page/HomePage.vue') },
+    { path: 'workspaces', component: () => import('../features/workspaces/workspaces-page/WorkspacesPage.vue') },
   ] }],
 });

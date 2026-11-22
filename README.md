@@ -2,7 +2,7 @@
 
 Um cliente Git local para gerenciar repositórios independentes em um workspace unificado.
 
-O projeto está na fundação técnica.
+A Milestone 1 foi aceita para avanço. A Milestone 2 está em andamento, com criação e listagem paginada de workspaces implementadas; os testes e a cobertura deste incremento aguardam execução manual.
 
 ## Requisitos
 
@@ -60,7 +60,19 @@ O botão de parar encerra a sessão de debug do navegador. A tarefa Vite permane
 
 Os arquivos de configuração são `src/frontend/.vscode/launch.json` (perfis de navegador) e `src/frontend/.vscode/tasks.json` (inicialização e detecção de disponibilidade do Vite).
 
-A interface permite selecionar português, espanhol ou inglês e consultar o estado do backend. Ela apresenta mensagens localizadas, carregamento e erros de conexão. As funções Git e o CRUD de workspaces ainda não estão implementados.
+A interface permite selecionar português, espanhol ou inglês e consultar o estado do backend. Ela apresenta mensagens localizadas, carregamento e erros de conexão. Acesse **Workspaces** na navegação para criar e listar workspaces persistidos no SQLite. Renomeação, exclusão, cadastro/validação de repositórios e operações Git ainda serão implementados.
+
+## Workspaces — primeiro incremento da Milestone 2
+
+- Criar workspace com nome obrigatório de até 100 caracteres, removendo espaços das extremidades.
+- Nomes ativos únicos sem diferenciar maiúsculas/minúsculas; conflitos retornam HTTP 409 localizado.
+- Listar com paginação de base zero, 10 itens por página na interface e ordenação por nome.
+- Estados de carregamento, lista vazia, erro com retry e mensagens em pt-BR, es e en.
+- API: `POST /api/Workspace/CreateWorkspace` com `{ "name": "Meu workspace" }` e `GET /api/Workspace/GetAllWorkspaces?page=0&pageSize=10`, documentadas no Scalar.
+
+O tooling EF 10.0.8 está fixado em `dotnet-tools.json`; para gerar migrations futuras, execute `dotnet tool restore` na raiz. Essa ferramenta não precisa ser executada para iniciar a aplicação.
+
+Teste manual do fluxo: abra Workspaces, crie um nome, tente repeti-lo com outra capitalização e reinicie a API para conferir a persistência. Renomear/excluir e adicionar/remover repositórios são os próximos incrementos; a Milestone 2 ainda não está concluída.
 
 ## Marca e temas
 
@@ -108,6 +120,6 @@ Por preferência do responsável, agentes devem fornecer esses comandos para exe
 - `tests`: testes unitários backend.
 - `scripts`: build e validação.
 
-SQLite e EF Core estão configurados; entidades e migrations serão adicionadas com os workspaces. O MVP usa Git CLI, respeita a autenticação já configurada no computador e não requer Azure ou Docker.
+SQLite e EF Core possuem o modelo inicial de Workspace, GitRepository e WorkspaceRepository. A API aplica migrations pendentes automaticamente antes de aceitar requisições, sem recriar o banco. A conexão padrão usa `Data Source=gitcosmos.db`, relativa ao diretório de trabalho do processo. Para fixar o local, configure `ConnectionStrings__GitCosmos` com caminho absoluto. O relacionamento permite compartilhar repositórios entre workspaces e impede vínculos repetidos; o cadastro desses vínculos ainda está pendente. O MVP usa Git CLI, respeita a autenticação já configurada no computador e não requer Azure ou Docker.
 
 Licença MIT. Consulte [LICENSE](LICENSE).

@@ -6,10 +6,23 @@ export class ApiBaseService {
   constructor(private readonly language: () => string, private readonly translate: (key: TranslationKey) => string) {}
 
   async get<T>(path: string, signal?: AbortSignal): Promise<CustomResponse<T>> {
+    return this.request<T>(path, {}, signal);
+  }
+
+  async post<T>(path: string, data: unknown, signal?: AbortSignal): Promise<CustomResponse<T>> {
+    return this.request<T>(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }, signal);
+  }
+
+  private async request<T>(path: string, init: RequestInit, signal?: AbortSignal): Promise<CustomResponse<T>> {
     const timeout = AbortSignal.timeout(30_000);
     try {
       const response = await fetch(path, {
-        headers: { 'Accept-Language': this.language() },
+        ...init,
+        headers: { 'Accept-Language': this.language(), ...init.headers },
         signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
       });
       const body = await response.json() as CustomResponse<T> & Partial<ErrorResponse>;

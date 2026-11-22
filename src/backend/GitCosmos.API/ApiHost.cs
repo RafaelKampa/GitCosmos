@@ -17,6 +17,7 @@ public static class ApiHost
         builder.Services.Configure<ApiBehaviorOptions>(options => options.InvalidModelStateResponseFactory = ApiConfiguration.InvalidModelState);
         builder.Services.AddOpenApi();
         builder.Services.AddSignalR();
+        builder.Services.AddHostedService<Services.DatabaseMigrationService>();
         builder.Services.AddApplication();
         builder.Services.AddInfrastructure(builder.Configuration.GetConnectionString("GitCosmos") ?? "Data Source=gitcosmos.db");
         var app = builder.Build();

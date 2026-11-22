@@ -27,5 +27,11 @@ it('boots the application, loads its route and changes language through the sele
   await flushPromises();
   expect(document.body.textContent).toContain('Tu universo comienza aquí');
   expect(fetch).toHaveBeenLastCalledWith('/api/System/GetStatus', expect.objectContaining({ headers: { 'Accept-Language': 'es' } }));
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({
+    success: true, result: { items: [], page: 0, pageSize: 10, totalRows: 0, totalPages: 0 }, messages: [], errors: [],
+  })));
+  await router.push('/workspaces'); await flushPromises();
+  expect(document.querySelector('h1')!.textContent).toBe('Workspaces');
+  expect(document.body.textContent).toContain('Aún no tiene workspaces');
   app.unmount(); vi.unstubAllGlobals(); localStorage.clear();
 });

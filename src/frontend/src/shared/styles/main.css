@@ -11,13 +11,20 @@ header p { color: var(--color-text-muted); margin: .6rem 0 0; }
 select, .theme-switcher { font: inherit; padding: .65rem .85rem; border: 1px solid var(--color-border); border-radius: .5rem; background: var(--color-surface); color: var(--color-text); }
 .theme-switcher { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; cursor: pointer; min-width: 7rem; }
 .theme-switcher:hover { background: var(--color-surface-hover); }
-:where(button, select, a):focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 3px; }
+:where(button, input, select, a):focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 3px; }
 main { max-width: 1100px; padding: 5rem 2rem; margin: auto; }
 .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .8rem; color: var(--color-action); }
 h1 { color: var(--gc-heading-h1); max-width: 800px; font-size: clamp(2.2rem, 5vw, 4rem); letter-spacing: -.04em; line-height: 1.1; margin: 1rem 0; }
 .description { font-size: 1.15rem; line-height: 1.7; color: var(--color-text-muted); max-width: 680px; }
 .status-card { margin-top: 2.5rem; padding: 2rem; border: 1px solid var(--color-divider); border-radius: 1rem; background: var(--color-surface); }
 h2 { font-size: 1.05rem; margin: 0 0 1rem; }
+.application-navigation { display: flex; gap: 1.5rem; margin-bottom: 2rem; }
+.application-navigation a { color: var(--gc-text-muted); text-decoration: none; padding-block: .5rem; border-bottom: 2px solid transparent; }
+.application-navigation .router-link-exact-active { color: var(--gc-primary); border-color: var(--gc-violet); }
+.workspace-form { padding: 1.5rem; background: var(--gc-surface); border: 1px solid var(--gc-divider); border-radius: .75rem; display: grid; gap: .75rem; }
+.workspace-form-controls { display: flex; flex-wrap: wrap; gap: 1rem; }
+.workspace-form-controls input { flex: 1; min-width: 0; width: 100%; }
+.workspace-form small { color: var(--gc-text-muted); }
 .status-card p { min-height: 2rem; }
 [role='alert'] { color: var(--color-danger); }
 @media (max-width: 640px) { header { align-items: flex-start; flex-direction: column; gap: 1.2rem; } .header-controls { justify-content: flex-start; } .brand-logo { width: 236px; } main { padding: 2.5rem 1.2rem; } }

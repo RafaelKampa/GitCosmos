@@ -14,5 +14,11 @@ const i18n = useLanguageStore();
     </div>
     <div class="header-controls"><ThemeSwitcher /><LanguageSwitcher /></div>
   </header>
-  <main><RouterView /></main>
+  <main>
+    <nav class="application-navigation" :aria-label="i18n.t('navigation')">
+      <RouterLink to="/">{{ i18n.t('home') }}</RouterLink>
+      <RouterLink to="/workspaces">{{ i18n.t('workspaces') }}</RouterLink>
+    </nav>
+    <RouterView />
+  </main>
 </template>
