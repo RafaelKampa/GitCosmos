@@ -9,6 +9,10 @@ public static class LocalizedText
         ["pt-BR"] = new()
         {
             ["system.ready"] = "O GitCosmos está pronto para iniciar.",
+            ["changes.invalid_selection"] = "Selecione um arquivo válido do repositório e a comparação preparada ou não preparada. Links de arquivos e pastas não são exibidos.",
+            ["changes.stale"] = "O arquivo mudou ou não está mais nesta lista de alterações. Atualize o estado do repositório.",
+            ["changes.diff_failed"] = "Não foi possível consultar as diferenças deste arquivo.",
+            ["changes.list_limit"] = "A lista de alterações é grande demais para exibição. Reduza a quantidade de arquivos não rastreados ou revise as regras de ignore.",
             ["dashboard.invalid_status"] = "O Git retornou um estado de repositório inválido.",
             ["dashboard.root_changed"] = "A pasta vinculada deixou de ser a raiz do repositório. Verifique o caminho local.",
             ["dashboard.status_failed"] = "Não foi possível consultar o estado Git deste repositório.",
@@ -57,6 +61,10 @@ public static class LocalizedText
         ["es"] = new()
         {
             ["system.ready"] = "GitCosmos está listo para comenzar.",
+            ["changes.invalid_selection"] = "Seleccione un archivo válido del repositorio y la comparación preparada o sin preparar. No se muestran enlaces de archivos o carpetas.",
+            ["changes.stale"] = "El archivo cambió o ya no está en la lista de cambios. Actualice el estado del repositorio.",
+            ["changes.diff_failed"] = "No se pudieron consultar las diferencias de este archivo.",
+            ["changes.list_limit"] = "La lista de cambios es demasiado grande. Reduzca los archivos sin seguimiento o revise las reglas de ignore.",
             ["dashboard.invalid_status"] = "Git devolvió un estado de repositorio inválido.",
             ["dashboard.root_changed"] = "La carpeta vinculada ya no es la raíz del repositorio. Revise la ruta local.",
             ["dashboard.status_failed"] = "No se pudo consultar el estado Git de este repositorio.",
@@ -105,6 +113,10 @@ public static class LocalizedText
         ["en"] = new()
         {
             ["system.ready"] = "GitCosmos is ready to start.",
+            ["changes.invalid_selection"] = "Select a valid repository file and the staged or unstaged comparison. File and folder links are not displayed.",
+            ["changes.stale"] = "The file changed or is no longer in this change list. Refresh the repository status.",
+            ["changes.diff_failed"] = "Could not read the differences for this file.",
+            ["changes.list_limit"] = "The change list is too large to display. Reduce untracked files or review ignore rules.",
             ["dashboard.invalid_status"] = "Git returned an invalid repository status.",
             ["dashboard.root_changed"] = "The linked folder is no longer the repository root. Check its local path.",
             ["dashboard.status_failed"] = "Could not read the Git status of this repository.",

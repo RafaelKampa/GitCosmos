@@ -2,7 +2,7 @@
 
 Um cliente Git local para gerenciar repositórios independentes em um workspace unificado.
 
-As Milestones 1 e 2, incluindo seleção nativa, clonagem e adição automática de repositórios, foram validadas pelos testes manuais do usuário. A Milestone 3 está em andamento: seu primeiro incremento implementa o dashboard com branch e estado local dos arquivos, aguardando novos testes e cobertura.
+As Milestones 1 e 2, incluindo seleção nativa, clonagem e adição automática de repositórios, foram validadas pelos testes manuais do usuário. A Milestone 3 está em andamento: dashboard com branch/estado local e tela individual com lista de alterações e diferenças implementados. Os testes e a cobertura do incremento atual aguardam execução manual.
 
 ## Requisitos
 
@@ -141,7 +141,26 @@ Clique em **Atualizar estado** para consultar novamente após alterações exter
 
 Endpoint no Scalar: `GET /api/WorkspaceDashboard/GetDashboard?workspaceId=1`, retornando `CustomResponse<WorkspaceDashboardResponse>` com identificação do workspace, instante de conclusão da leitura (`checkedAt`) e resultados por repositório. IDs inválidos retornam 400 e workspaces inexistentes/inativos retornam 404. Sem nova migration ou dependência.
 
-Os testes preparados cobrem parsing, Git real em diretórios temporários (incluindo preservação do índice), disponibilidade parcial, validações, cancelamento, contratos HTTP, componentes e navegação. Execute-os manualmente com o script indicado abaixo. Para validar visualmente, abra um workspace com repositórios limpos, alterados e um caminho indisponível; confira branch, contagens, atualização e os dois temas. Histórico de commits e visualização de diferenças permanecem como próximos incrementos da Milestone 3.
+Os testes preparados cobrem parsing, Git real em diretórios temporários (incluindo preservação do índice), disponibilidade parcial, validações, cancelamento, contratos HTTP, componentes e navegação. Execute-os manualmente com o script indicado abaixo. Para validar visualmente, abra um workspace com repositórios limpos, alterados e um caminho indisponível; confira branch, contagens, atualização e os dois temas. A visualização individual de alterações locais está descrita abaixo; histórico de commits e suas diferenças permanecem como próximos incrementos da Milestone 3.
+
+## Abrir repositório e visualizar diferenças locais
+
+No dashboard, clique em **Abrir repositório** no item desejado. A rota `/workspaces/{workspaceId}/repositories/{repositoryId}` abre uma tela com nome, caminho e branch do repositório. A lista lateral separa arquivos **Preparados para commit** e **Não preparados**. Um arquivo com alterações em ambos os lados aparece nos dois grupos. Conflitos ficam no grupo não preparado. Nomes e caminhos originais de renomeações são preservados.
+
+Selecione um arquivo para ver o diff unificado, com números de linhas, contexto e adições/remoções destacadas pelos tokens dos temas Cosmic. A comparação preparada é entre HEAD e índice; a não preparada, entre índice e árvore de trabalho. Repositórios sem commits são aceitos. Arquivos novos não rastreados têm prévia textual UTF-8 apresentada como adições; arquivos vazios ou sem diferenças textuais têm mensagem própria.
+
+Binários, conflitos e submódulos são identificados com explicações específicas. O diff textual de conflitos e o conteúdo interno de submódulos ficam para etapas posteriores. Saídas acima de 200.000 caracteres ou 4.000 linhas não são renderizadas; arquivos novos também têm limite de leitura de 200.000 bytes. Conteúdo não UTF-8 ou com NUL na prévia de arquivo novo é tratado como binário. Há limite de 1.000.000 de caracteres para a listagem de status. O processo continua drenando a saída ao atingir o limite, mantendo uso de memória limitado e respeitando timeout/cancelamento.
+
+O backend verifica workspace ativo e vínculo em cada consulta, usa o caminho persistido e revalida a lista de alterações antes de gerar o diff. Seleções removidas ou que mudaram de grupo retornam 409 e pedem atualização. Caminhos são tratados literalmente, com rejeição de escapes do diretório, metadados `.git` e links/junctions em caminhos de arquivos. O [`git diff`](https://git-scm.com/docs/git-diff) é chamado sem shell, diff externo ou textconv. São apenas consultas: não há stage, unstage, commit ou escrita nos arquivos/índice por esta tela.
+
+Use **Atualizar estado** após edições externas. Trocar arquivo, repositório ou idioma, atualizar a lista ou sair cancela as consultas anteriores e descarta respostas tardias. Falhas de diff preservam a seleção e permitem **Tentar novamente**. Listagens e comparações têm mensagens em pt-BR/es/en. Não há dependências ou migrations novas.
+
+Endpoints documentados no Scalar, ambos com envelope `CustomResponse`:
+
+- `GET /api/RepositoryChanges/GetChanges?workspaceId=1&repositoryId=2`: identificação, branch/contagens e arquivos com os estados de índice e working tree.
+- `GET /api/RepositoryChanges/GetDiff?workspaceId=1&repositoryId=2&path=src%2Fexample.txt&area=working`: comparação de um arquivo selecionado; `area` aceita `working` ou `staged`. O frontend codifica o caminho em parâmetros de consulta.
+
+Validação manual sugerida: escolha um arquivo modificado, prepare parte das alterações por uma ferramenta externa e edite novamente. Compare os dois grupos, confira um arquivo novo, um binário e uma renomeação; troque rapidamente de arquivo e teste atualização e os dois temas. Os testes unitários preparados usam apenas fixtures temporárias locais, sem rede; sua execução continua manual. Histórico/grafo, operações de staging/commit e comparação lado a lado continuam pendentes.
 
 ## Marca e temas
 

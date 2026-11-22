@@ -49,7 +49,10 @@ onUnmounted(() => request?.abort());
       <p>{{ i18n.t('workspaceRepositoryCount') }}: {{ dashboard.repositories.length }}</p>
       <p v-if="dashboard.repositories.length === 0">{{ i18n.t('dashboardEmpty') }}</p>
       <div v-else class="dashboard-repositories">
-        <RepositoryStatusCard v-for="repository in dashboard.repositories" :key="repository.id" :repository="repository" />
+        <div v-for="repository in dashboard.repositories" :key="repository.id" class="dashboard-repository-item">
+          <RepositoryStatusCard :repository="repository" />
+          <RouterLink class="repository-open-link" :to="'/workspaces/' + workspaceId + '/repositories/' + repository.id">{{ i18n.t('changesOpen') }} — {{ repository.name }}</RouterLink>
+        </div>
       </div>
       <p class="dashboard-counts-help">{{ i18n.t('dashboardCountsHelp') }}</p>
     </template>
@@ -60,5 +63,6 @@ onUnmounted(() => request?.abort());
 .dashboard-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .dashboard-heading h1 { overflow-wrap: anywhere; }
 .dashboard-repositories { display: grid; gap: 1.5rem; }
+.repository-open-link { display: inline-block; margin-top: .75rem; color: var(--gc-primary); }
 .dashboard-counts-help { color: var(--gc-text-muted); }
 </style>

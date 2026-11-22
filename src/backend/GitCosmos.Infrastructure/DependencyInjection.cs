@@ -16,6 +16,8 @@ public static class DependencyInjection
             .AddScoped<IWorkspaceRepository, Repositories.WorkspaceRepository>()
             .AddScoped<IRepositoryLinkRepository, Repositories.RepositoryLinkRepository>()
             .AddSingleton<IGitProcessRunner>(_ => new GitProcessRunner("git", TimeSpan.FromSeconds(10)))
+            .AddSingleton<IBoundedGitProcessRunner>(_ => new GitProcessRunner("git", TimeSpan.FromSeconds(10)))
+            .AddScoped<IRepositoryChangesReader, RepositoryChangesReader>()
             .AddScoped<IGitRepositoryInspector, GitRepositoryInspector>()
             .AddScoped<IRepositoryStatusReader, RepositoryStatusReader>()
             .AddSingleton<IWindowsFolderDialogFactory, WindowsFolderDialogFactory>()

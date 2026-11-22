@@ -43,6 +43,7 @@ describe('workspace dashboard', () => {
     pending.resolve(populated); await flushPromises();
     expect(page.get('h1').text()).toContain('Team');
     expect(page.findAllComponents(RepositoryStatusCard)).toHaveLength(2);
+    expect(page.get('.repository-open-link').attributes('href')).toBe('/workspaces/1/repositories/1');
     expect(page.text()).toContain('Pasta indisponível');
     expect(page.text()).toContain('As contagens podem se sobrepor');
     await page.get('button').trigger('click'); await flushPromises();

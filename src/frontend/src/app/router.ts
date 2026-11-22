@@ -7,5 +7,6 @@ export const router = createRouter({
     { path: '', component: () => import('../features/home/home-page/HomePage.vue') },
     { path: 'workspaces', component: () => import('../features/workspaces/workspaces-page/WorkspacesPage.vue') },
     { path: 'workspaces/:id', component: () => import('../features/workspaces/workspace-dashboard/WorkspaceDashboard.vue'), props: route => ({ workspaceId: Number(route.params.id) }) },
+    { path: 'workspaces/:workspaceId/repositories/:repositoryId', component: () => import('../features/repositories/repository-details/RepositoryDetails.vue'), props: route => ({ workspaceId: Number(route.params.workspaceId), repositoryId: Number(route.params.repositoryId) }) },
   ] }],
 });

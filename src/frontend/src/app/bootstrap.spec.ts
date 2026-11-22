@@ -56,4 +56,11 @@ it('boots the application, loads its route and changes language through the sele
   expect(fetch).toHaveBeenLastCalledWith('/api/WorkspaceDashboard/GetDashboard?workspaceId=1',
     expect.objectContaining({ headers: { 'Accept-Language': 'es' } }));
   expect(document.body.textContent).toContain('Este workspace aún no tiene repositorios');
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({ success: true, errors: [], messages: [], result: {
+    id: 2, name: 'Repo details', localPath: 'C:/repo', files: [],
+    status: { branch: 'main', isDetached: false, hasCommits: true, changedFiles: 0, modified: 0, added: 0, deleted: 0, renamed: 0, untracked: 0, conflicted: 0, staged: 0, unstaged: 0 },
+  } })));
+  await router.push('/workspaces/1/repositories/2'); await flushPromises();
+  expect(document.querySelector('h1')!.textContent).toBe('Repo details');
+  expect(fetch).toHaveBeenLastCalledWith('/api/RepositoryChanges/GetChanges?workspaceId=1&repositoryId=2', expect.objectContaining({ headers: { 'Accept-Language': 'es' } }));
 }, 60_000);

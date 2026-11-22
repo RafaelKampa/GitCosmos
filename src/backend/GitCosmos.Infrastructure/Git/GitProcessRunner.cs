@@ -7,10 +7,17 @@ using GitCosmos.Application.Interfaces.Git;
 
 namespace GitCosmos.Infrastructure.Git;
 
-public class GitProcessRunner(string executable, TimeSpan timeout) : IGitProcessRunner
+public class GitProcessRunner(string executable, TimeSpan timeout) : IGitProcessRunner, IBoundedGitProcessRunner
 {
     public async Task<GitCommandResult> RunAsync(string directory, IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
     {
+        var result = await RunLimitedAsync(directory, arguments, int.MaxValue, cancellationToken);
+        return new(result.ExitCode, result.Output);
+    }
+
+    public async Task<LimitedGitOutput> RunLimitedAsync(string directory, IReadOnlyList<string> arguments, int maximumCharacters, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumCharacters);
         cancellationToken.ThrowIfCancellationRequested();
         using var limit = new CancellationTokenSource(timeout);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit.Token);
@@ -37,13 +44,15 @@ public class GitProcessRunner(string executable, TimeSpan timeout) : IGitProcess
         {
             throw new OperationFailedAppException(LocalizedText.Get("repository.git_unavailable"));
         }
-        var output = process.StandardOutput.ReadToEndAsync();
-        var errors = process.StandardError.ReadToEndAsync();
+        process.StandardInput.Close();
+        var output = CaptureAsync(process.StandardOutput, maximumCharacters);
+        var errors = CaptureAsync(process.StandardError, 0);
         try
         {
             await process.WaitForExitAsync(linked.Token);
             await Task.WhenAll(output, errors);
-            return new(process.ExitCode, await output);
+            var captured = await output;
+            return new(process.ExitCode, captured.Text, captured.Truncated);
         }
         catch (OperationCanceledException)
         {
@@ -57,5 +66,21 @@ public class GitProcessRunner(string executable, TimeSpan timeout) : IGitProcess
             if (cancellationToken.IsCancellationRequested) throw;
             throw new OperationFailedAppException(LocalizedText.Get("repository.git_timeout"));
         }
+    }
+
+    private static async Task<(string Text, bool Truncated)> CaptureAsync(StreamReader reader, int maximumCharacters)
+    {
+        var builder = new StringBuilder();
+        var buffer = new char[4096];
+        var truncated = false;
+        int read;
+        // Continue draining after reaching the bound so the child cannot block on a full pipe.
+        while ((read = await reader.ReadAsync(buffer)) != 0)
+        {
+            var take = Math.Min(read, maximumCharacters - builder.Length);
+            builder.Append(buffer, 0, take);
+            if (take < read) truncated = true;
+        }
+        return (builder.ToString(), truncated);
     }
 }
