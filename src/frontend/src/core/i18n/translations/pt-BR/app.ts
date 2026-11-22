@@ -1,4 +1,11 @@
 export default {
+  renameWorkspace: 'Renomear workspace',
+  deleteWorkspace: 'Excluir workspace',
+  saveWorkspace: 'Salvar nome',
+  cancel: 'Cancelar',
+  workspaceDeleteConfirmation: 'Confirme a exclusão deste workspace:',
+  workspaceDeleteHint: 'Os vínculos serão removidos. Os repositórios e seus arquivos no computador serão preservados.',
+  workspaceActions: 'Ações do workspace',
   navigation: 'Navegação principal',
   home: 'Início',
   workspaces: 'Workspaces',

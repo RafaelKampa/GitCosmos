@@ -9,7 +9,28 @@ namespace GitCosmos.Infrastructure.Repositories;
 public class WorkspaceRepository(GitCosmosDbContext context) : Repository<Workspace>(context), IWorkspaceRepository
 {
     public Task<bool> NameExistsAsync(string nameKey, CancellationToken cancellationToken = default) =>
-        Context.Workspaces.AnyAsync(x => x.Active && x.NameKey == nameKey, cancellationToken);
+        NameExistsAsync(nameKey, 0, cancellationToken);
+
+    public Task<bool> NameExistsAsync(string nameKey, int excludingId, CancellationToken cancellationToken = default) =>
+        Context.Workspaces.AnyAsync(x => x.Active && x.NameKey == nameKey && x.Id != excludingId, cancellationToken);
+
+    public Task<Workspace?> GetFullByIdAsync(int id, CancellationToken cancellationToken = default) =>
+        Context.Workspaces.Include(x => x.Repositories).SingleOrDefaultAsync(x => x.Id == id && x.Active, cancellationToken);
+
+    public async Task<int> UpdateAsync(Workspace workspace, CancellationToken cancellationToken = default)
+    {
+        // GetFullByIdAsync returns a tracked entity; save only the changed properties.
+        await Context.SaveChangesAsync(cancellationToken);
+        return workspace.Id;
+    }
+
+    public async Task<int> DeleteAsync(Workspace workspace, CancellationToken cancellationToken = default)
+    {
+        Context.WorkspaceRepositories.RemoveRange(workspace.Repositories);
+        // The lifecycle change and link removals are committed in one transaction.
+        await Context.SaveChangesAsync(cancellationToken);
+        return workspace.Id;
+    }
 
     public async Task<WorkspacePage> GetPageAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {

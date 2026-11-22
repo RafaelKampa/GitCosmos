@@ -12,6 +12,14 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository) : IWorks
 {
     private readonly CreateWorkspaceUseCase _createUseCase = new(workspaceRepository);
     private readonly GetWorkspaceUseCase _getUseCase = new(workspaceRepository);
+    private readonly UpdateWorkspaceUseCase _updateUseCase = new(workspaceRepository);
+    private readonly DeleteWorkspaceUseCase _deleteUseCase = new(workspaceRepository);
+
+    public Task<CustomResponse<WorkspaceResponse>> UpdateAsync(UpdateWorkspaceRequest request, CancellationToken cancellationToken = default) =>
+        _updateUseCase.UpdateAsync(request, cancellationToken);
+
+    public Task<CustomResponse<int?>> DeleteAsync(int id, CancellationToken cancellationToken = default) =>
+        _deleteUseCase.DeleteAsync(id, cancellationToken);
 
     public Task<CustomResponse<WorkspaceResponse>> CreateAsync(CreateWorkspaceRequest request, CancellationToken cancellationToken = default) =>
         _createUseCase.CreateAsync(request, cancellationToken);

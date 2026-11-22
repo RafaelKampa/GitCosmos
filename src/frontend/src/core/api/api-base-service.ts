@@ -10,8 +10,20 @@ export class ApiBaseService {
   }
 
   async post<T>(path: string, data: unknown, signal?: AbortSignal): Promise<CustomResponse<T>> {
+    return this.sendJson<T>('POST', path, data, signal);
+  }
+
+  async put<T>(path: string, data: unknown, signal?: AbortSignal): Promise<CustomResponse<T>> {
+    return this.sendJson<T>('PUT', path, data, signal);
+  }
+
+  async delete<T>(path: string, signal?: AbortSignal): Promise<CustomResponse<T>> {
+    return this.request<T>(path, { method: 'DELETE' }, signal);
+  }
+
+  private async sendJson<T>(method: 'POST' | 'PUT', path: string, data: unknown, signal?: AbortSignal): Promise<CustomResponse<T>> {
     return this.request<T>(path, {
-      method: 'POST',
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     }, signal);

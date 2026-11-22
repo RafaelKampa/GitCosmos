@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { normalizeLanguage, useLanguageStore } from './language.store';
+import pt from './translations/pt-BR/app';
+import es from './translations/es/app';
+import en from './translations/en/app';
 
 describe('languages', () => {
   beforeEach(() => { localStorage.clear(); setActivePinia(createPinia()); });
@@ -21,6 +24,10 @@ describe('languages', () => {
   it('provides the same translation keys in all three languages', () => {
     const store = useLanguageStore();
     const values: string[] = [];
+    for (const catalog of [pt, es, en]) {
+      expect(Object.keys(catalog).sort()).toEqual(Object.keys(pt).sort());
+      for (const value of Object.values(catalog)) expect(value.trim().length).toBeGreaterThan(0);
+    }
     for (const language of ['pt-BR', 'es', 'en']) {
       store.setLanguage(language);
       values.push(store.t('title'));

@@ -2,7 +2,7 @@
 
 Um cliente Git local para gerenciar repositórios independentes em um workspace unificado.
 
-A Milestone 1 foi aceita para avanço. A Milestone 2 está em andamento, com criação e listagem paginada de workspaces implementadas; os testes e a cobertura deste incremento aguardam execução manual.
+A Milestone 1 foi aceita para avanço. A Milestone 2 está em andamento, com criação, listagem paginada, renomeação e exclusão de workspaces implementadas; os testes e a cobertura do incremento de renomeação/exclusão aguardam execução manual.
 
 ## Requisitos
 
@@ -60,19 +60,22 @@ O botão de parar encerra a sessão de debug do navegador. A tarefa Vite permane
 
 Os arquivos de configuração são `src/frontend/.vscode/launch.json` (perfis de navegador) e `src/frontend/.vscode/tasks.json` (inicialização e detecção de disponibilidade do Vite).
 
-A interface permite selecionar português, espanhol ou inglês e consultar o estado do backend. Ela apresenta mensagens localizadas, carregamento e erros de conexão. Acesse **Workspaces** na navegação para criar e listar workspaces persistidos no SQLite. Renomeação, exclusão, cadastro/validação de repositórios e operações Git ainda serão implementados.
+A interface permite selecionar português, espanhol ou inglês e consultar o estado do backend. Ela apresenta mensagens localizadas, carregamento e erros de conexão. Acesse **Workspaces** na navegação para criar e listar workspaces persistidos no SQLite. Os botões de cada workspace permitem renomear e confirmar a exclusão. Cadastro/validação de repositórios e operações Git ainda serão implementados.
 
-## Workspaces — primeiro incremento da Milestone 2
+## Workspaces — Milestone 2 em andamento
 
 - Criar workspace com nome obrigatório de até 100 caracteres, removendo espaços das extremidades.
 - Nomes ativos únicos sem diferenciar maiúsculas/minúsculas; conflitos retornam HTTP 409 localizado.
 - Listar com paginação de base zero, 10 itens por página na interface e ordenação por nome.
+- Renomear com as mesmas regras do cadastro, permitindo mudar a capitalização do próprio nome.
+- Excluir após confirmação: o workspace fica inativo no banco e seus vínculos são removidos em uma transação. Repositórios e arquivos no computador são preservados.
 - Estados de carregamento, lista vazia, erro com retry e mensagens em pt-BR, es e en.
-- API: `POST /api/Workspace/CreateWorkspace` com `{ "name": "Meu workspace" }` e `GET /api/Workspace/GetAllWorkspaces?page=0&pageSize=10`, documentadas no Scalar.
+- API: `POST /api/Workspace/CreateWorkspace` com `{ "name": "Meu workspace" }`, `GET /api/Workspace/GetAllWorkspaces?page=0&pageSize=10`, `PUT /api/Workspace/UpdateWorkspace` com `{ "id": 1, "name": "Novo nome" }` e `DELETE /api/Workspace/DeleteWorkspace?id=1`, documentadas no Scalar.
+- IDs inválidos retornam HTTP 400, workspaces inexistentes/inativos retornam 404 e conflitos de nome retornam 409, com mensagens nos três idiomas.
 
 O tooling EF 10.0.8 está fixado em `dotnet-tools.json`; para gerar migrations futuras, execute `dotnet tool restore` na raiz. Essa ferramenta não precisa ser executada para iniciar a aplicação.
 
-Teste manual do fluxo: abra Workspaces, crie um nome, tente repeti-lo com outra capitalização e reinicie a API para conferir a persistência. Renomear/excluir e adicionar/remover repositórios são os próximos incrementos; a Milestone 2 ainda não está concluída.
+Teste manual do fluxo: abra Workspaces, crie um nome e tente repeti-lo com outra capitalização. Renomeie, confira a persistência após reiniciar, cancele uma exclusão e depois confirme-a. Após renomear/excluir, a lista volta à primeira página para refletir a ordenação e evitar uma página vazia. Este incremento não altera o schema e não exige nova migration. Adicionar/remover repositórios e validar os caminhos são os próximos incrementos; a Milestone 2 ainda não está concluída.
 
 ## Marca e temas
 
@@ -109,7 +112,7 @@ Set-Location C:\Repos\GitCosmos
 .\scripts\Test.ps1
 ```
 
-Os testes unitários devem atingir no mínimo 95% de linhas e branches em backend e frontend. O script falha se os testes ou a cobertura não passarem. Relatórios: `artifacts/coverage/backend` e `src/frontend/coverage`. A CI usa os mesmos scripts e publica os relatórios.
+Os testes unitários devem atingir no mínimo 95% de linhas e branches em backend e frontend. Os catálogos estáticos em `src/core/i18n/translations` são omitidos do relatório de cobertura porque não possuem itens executáveis contabilizados (0/0). Os testes de idiomas, consistência das chaves e mensagens dos componentes continuam ativos; os limiares de cobertura não foram reduzidos. O script falha se os testes ou a cobertura não passarem. Relatórios: `artifacts/coverage/backend` e `src/frontend/coverage`. A CI usa os mesmos scripts e publica os relatórios.
 
 Por preferência do responsável, agentes devem fornecer esses comandos para execução manual, sem iniciar testes automaticamente. A CI continua validando builds e cobertura nos pushes e pull requests.
 

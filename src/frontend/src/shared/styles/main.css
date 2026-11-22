@@ -28,3 +28,13 @@ h2 { font-size: 1.05rem; margin: 0 0 1rem; }
 .status-card p { min-height: 2rem; }
 [role='alert'] { color: var(--color-danger); }
 @media (max-width: 640px) { header { align-items: flex-start; flex-direction: column; gap: 1.2rem; } .header-controls { justify-content: flex-start; } .brand-logo { width: 236px; } main { padding: 2.5rem 1.2rem; } }
+
+.workspace-action-dialog { background: var(--gc-surface-raised); color: var(--gc-text); border: 1px solid var(--gc-border); }
+.workspace-action-dialog form { display: grid; gap: 1rem; }
+.workspace-action-dialog input { width: 100%; }
+.workspace-action-dialog small { color: var(--gc-text-muted); }
+.workspace-delete-name { overflow-wrap: anywhere; }
+.workspace-dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; margin-top: .5rem; }
+.workspace-danger-action { font: inherit; font-weight: 500; cursor: pointer; padding: .5rem .75rem; border: 1px solid var(--gc-danger); border-radius: .5rem; background: var(--gc-surface); color: var(--gc-danger); }
+.workspace-danger-action:hover:not(:disabled) { background: var(--gc-danger-bg); }
+.workspace-danger-action:disabled { opacity: .6; cursor: default; }

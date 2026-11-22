@@ -16,7 +16,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,vue}'],
-      exclude: ['src/**/*.spec.ts', 'src/**/*.model.ts'],
+      // Static translation catalogs contain no measured executable items (0/0).
+      // Their behavior remains exercised by the language and component tests.
+      exclude: ['src/**/*.spec.ts', 'src/**/*.model.ts', 'src/core/i18n/translations/**'],
       reporter: ['text', 'json-summary', 'html'],
       thresholds: { perFile: true, lines: 95, branches: 95, functions: 95, statements: 95 },
     },

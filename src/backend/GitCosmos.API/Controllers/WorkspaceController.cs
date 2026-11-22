@@ -11,6 +11,33 @@ namespace GitCosmos.API.Controllers;
 [Route("api/[controller]")]
 public class WorkspaceController(IWorkspaceService workspaceService) : ControllerBase
 {
+    [HttpPut(Name = "Workspace_UpdateWorkspace")]
+    [Route("UpdateWorkspace")]
+    [EndpointSummary("Rename an active local workspace")]
+    [ProducesResponseType<CustomResponse<WorkspaceResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateWorkspace([FromBody] UpdateWorkspaceRequest request, CancellationToken cancellationToken)
+    {
+        var response = await workspaceService.UpdateAsync(request, cancellationToken);
+        if (!response.Success) return BadRequest(response);
+        return Ok(response);
+    }
+
+    [HttpDelete(Name = "Workspace_DeleteWorkspace")]
+    [Route("DeleteWorkspace")]
+    [EndpointSummary("Delete a workspace and its links, preserving repository files")]
+    [ProducesResponseType<CustomResponse<int?>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteWorkspace([FromQuery] int id, CancellationToken cancellationToken)
+    {
+        var response = await workspaceService.DeleteAsync(id, cancellationToken);
+        if (!response.Success) return BadRequest(response);
+        return Ok(response);
+    }
+
     [HttpPost(Name = "Workspace_CreateWorkspace")]
     [Route("CreateWorkspace")]
     [EndpointSummary("Create a local workspace")]

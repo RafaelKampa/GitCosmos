@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import PrimeVue from 'primevue/config';
 import WorkspacesPage from './WorkspacesPage.vue';
 import WorkspaceCreateForm from '../workspace-create-form/WorkspaceCreateForm.vue';
+import WorkspaceActionDialog from '../workspace-action-dialog/WorkspaceActionDialog.vue';
 import { WorkspaceApiService } from '../../../core/workspaces/workspace-api.service';
 import { ApiError } from '../../../core/api/api-error';
 import { useLanguageStore } from '../../../core/i18n/language.store';
@@ -32,6 +33,7 @@ describe('workspaces page', () => {
   function render() {
     wrapper = mount(WorkspacesPage, { global: { plugins: [PrimeVue], stubs: {
       Button: { props: ['label', 'disabled'], template: '<button :disabled="disabled">{{ label }}</button>' },
+      Dialog: { props: ['visible', 'header', 'closable'], emits: ['update:visible'], template: '<div v-if="visible"><h3>{{ header }}</h3><slot /></div>' },
     } } });
     return wrapper;
   }
@@ -154,4 +156,99 @@ describe('workspaces page', () => {
     if (succeeds) pending.resolve(created); else pending.reject(new Error('cancelled'));
     await flushPromises();
   });
+
+  it('opens rename, preserves the entered name on conflict, and refreshes after success', async () => {
+    const list = vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces').mockResolvedValue(listing());
+    const update = vi.spyOn(WorkspaceApiService.prototype, 'updateWorkspace')
+      .mockRejectedValueOnce(new ApiError('Duplicate name')).mockResolvedValue(created);
+    const page = render(); await flushPromises();
+    await page.get('.workspace-row-actions button:first-child').trigger('click');
+    let dialog = page.getComponent(WorkspaceActionDialog);
+    expect(dialog.props('mode')).toBe('rename');
+    await dialog.get('input').setValue('  New Team  ');
+    await dialog.get('form').trigger('submit'); await flushPromises();
+    expect(update).toHaveBeenCalledWith({ id: 1, name: 'New Team' }, expect.any(AbortSignal));
+    expect(dialog.get('[role="alert"]').text()).toBe('Duplicate name');
+    expect(dialog.get<HTMLInputElement>('input').element.value).toBe('  New Team  ');
+    expect(page.find('.workspace-feedback').exists()).toBe(false);
+    await dialog.get('form').trigger('submit'); await flushPromises();
+    expect(page.findComponent(WorkspaceActionDialog).exists()).toBe(false);
+    expect(list).toHaveBeenLastCalledWith(0, expect.any(AbortSignal));
+    expect(page.get('[role="status"]').text()).toBe('Created');
+  });
+
+  it('cancels both actions without calling a mutation and resets the rename input on reopening', async () => {
+    vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces').mockResolvedValue(listing());
+    const update = vi.spyOn(WorkspaceApiService.prototype, 'updateWorkspace');
+    const remove = vi.spyOn(WorkspaceApiService.prototype, 'deleteWorkspace');
+    const page = render(); await flushPromises();
+    await page.get('.workspace-row-actions button:first-child').trigger('click');
+    await page.getComponent(WorkspaceActionDialog).get('input').setValue('Discard');
+    page.getComponent(WorkspaceActionDialog).vm.$emit('cancel'); await flushPromises();
+    expect(page.findComponent(WorkspaceActionDialog).exists()).toBe(false);
+    await page.get('.workspace-row-actions button:first-child').trigger('click');
+    expect(page.getComponent(WorkspaceActionDialog).get<HTMLInputElement>('input').element.value).toBe('Team');
+    page.getComponent(WorkspaceActionDialog).vm.$emit('cancel'); await flushPromises();
+    await page.get('.workspace-row-actions button:last-child').trigger('click');
+    expect(page.getComponent(WorkspaceActionDialog).props('mode')).toBe('delete');
+    page.getComponent(WorkspaceActionDialog).vm.$emit('cancel'); await flushPromises();
+    expect(update).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('requires confirmation, blocks dismiss and duplicate deletes while saving, then returns to page zero', async () => {
+    const list = vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces')
+      .mockResolvedValueOnce(listing(1)).mockResolvedValue(empty);
+    const pending = deferred<CustomResponse<number>>();
+    const remove = vi.spyOn(WorkspaceApiService.prototype, 'deleteWorkspace').mockReturnValue(pending.promise);
+    const page = render(); await flushPromises();
+    await page.get('.workspace-row-actions button:last-child').trigger('click');
+    const dialog = page.getComponent(WorkspaceActionDialog);
+    expect(remove).not.toHaveBeenCalled();
+    await dialog.get('form').trigger('submit'); await flushPromises();
+    expect(remove).toHaveBeenCalledWith(1, expect.any(AbortSignal));
+    expect(dialog.props('busy')).toBe(true);
+    dialog.vm.$emit('cancel'); dialog.vm.$emit('delete'); await flushPromises();
+    expect(page.findComponent(WorkspaceActionDialog).exists()).toBe(true);
+    expect(remove).toHaveBeenCalledTimes(1);
+    expect(page.get('.workspace-row-actions button:first-child').attributes('disabled')).toBeDefined();
+    pending.resolve({ success: true, result: 1, messages: ['Deleted'], errors: [] }); await flushPromises();
+    expect(page.findComponent(WorkspaceActionDialog).exists()).toBe(false);
+    expect(page.text()).toContain('Você ainda não possui workspaces');
+    expect(page.get('[role="status"]').text()).toBe('Deleted');
+    expect(list).toHaveBeenLastCalledWith(0, expect.any(AbortSignal));
+  });
+
+  it.each([new ApiError('Workspace not found'), new Error('technical')])('keeps a failed deletion open for review or retry', async failure => {
+    vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces').mockResolvedValue(listing());
+    vi.spyOn(WorkspaceApiService.prototype, 'deleteWorkspace').mockRejectedValue(failure);
+    const page = render(); await flushPromises();
+    await page.get('.workspace-row-actions button:last-child').trigger('click');
+    const dialog = page.getComponent(WorkspaceActionDialog);
+    await dialog.get('form').trigger('submit'); await flushPromises();
+    expect(dialog.props('busy')).toBe(false);
+    expect(dialog.get('[role="alert"]').text()).toBe(failure instanceof ApiError ? failure.message : 'Não foi possível carregar ou salvar os workspaces.');
+    expect(page.get('li').text()).toContain('Team');
+  });
+
+  it.each(['rename', 'delete'] as const)('cancels an outstanding %s when leaving the page', async mode => {
+    vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces').mockResolvedValue(listing());
+    const renameRequest = deferred<typeof created>();
+    const deleteRequest = deferred<CustomResponse<number>>();
+    const update = vi.spyOn(WorkspaceApiService.prototype, 'updateWorkspace').mockReturnValue(renameRequest.promise);
+    const remove = vi.spyOn(WorkspaceApiService.prototype, 'deleteWorkspace').mockReturnValue(deleteRequest.promise);
+    const page = render(); await flushPromises();
+    await page.get(mode === 'rename' ? '.workspace-row-actions button:first-child' : '.workspace-row-actions button:last-child').trigger('click');
+    await page.getComponent(WorkspaceActionDialog).get('form').trigger('submit'); await flushPromises();
+    page.unmount(); wrapper = undefined;
+    if (mode === 'rename') {
+      expect(update.mock.calls[0]![1]!.aborted).toBe(true);
+      renameRequest.resolve(created);
+    } else {
+      expect(remove.mock.calls[0]![1]!.aborted).toBe(true);
+      deleteRequest.reject(new Error('cancelled'));
+    }
+    await flushPromises();
+  });
+
 });
