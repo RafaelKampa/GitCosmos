@@ -1,15 +1,30 @@
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { flushPromises } from '@vue/test-utils';
+import type { App } from 'vue';
 
+let app: App | undefined;
+
+afterEach(() => {
+  app?.unmount();
+  app = undefined;
+  vi.unstubAllGlobals();
+  localStorage.clear();
+  document.body.replaceChildren();
+  window.history.replaceState({}, '', '/');
+});
+
+// Cold imports include the full application and lazy routes, instrumented for coverage.
+// Keep the longer budget local to this smoke test; ordinary tests retain 15 seconds.
 it('boots the application, loads its route and changes language through the selector', async () => {
   localStorage.clear();
   localStorage.setItem('gitcosmos.language', 'en');
   localStorage.setItem('gitcosmos.theme', 'dark');
+  window.history.replaceState({}, '', '/');
   document.body.innerHTML = '<div id="app"></div>';
   vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => new Response(JSON.stringify({
     success: true, result: { name: 'GitCosmos' }, messages: ['Ready'], errors: [],
   }))));
-  const { app } = await import('../main');
+  app = (await import('../main')).app;
   const { router } = await import('./router');
   await router.isReady(); await flushPromises();
   expect(document.documentElement.lang).toBe('en');
@@ -33,5 +48,4 @@ it('boots the application, loads its route and changes language through the sele
   await router.push('/workspaces'); await flushPromises();
   expect(document.querySelector('h1')!.textContent).toBe('Workspaces');
   expect(document.body.textContent).toContain('Aún no tiene workspaces');
-  app.unmount(); vi.unstubAllGlobals(); localStorage.clear();
-});
+}, 60_000);

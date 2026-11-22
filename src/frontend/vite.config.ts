@@ -6,7 +6,8 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    proxy: { '/api': { target: 'http://127.0.0.1:5210', changeOrigin: true } },
+    // Preserve the browser Host so the API can validate Origin through the dev proxy.
+    proxy: { '/api': { target: 'http://127.0.0.1:5210', changeOrigin: false } },
   },
   test: {
     environment: 'jsdom',

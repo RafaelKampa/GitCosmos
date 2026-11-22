@@ -8,6 +8,8 @@ namespace GitCosmos.Infrastructure.Repositories;
 
 public class WorkspaceRepository(GitCosmosDbContext context) : Repository<Workspace>(context), IWorkspaceRepository
 {
+    public Task<bool> ExistsAsync(int id, CancellationToken cancellationToken = default) =>
+        Context.Workspaces.AnyAsync(x => x.Id == id && x.Active, cancellationToken);
     public Task<bool> NameExistsAsync(string nameKey, CancellationToken cancellationToken = default) =>
         NameExistsAsync(nameKey, 0, cancellationToken);
 

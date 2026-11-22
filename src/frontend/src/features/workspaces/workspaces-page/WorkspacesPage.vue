@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue';
 import Button from 'primevue/button';
 import WorkspaceCreateForm from '../workspace-create-form/WorkspaceCreateForm.vue';
 import WorkspaceActionDialog from '../workspace-action-dialog/WorkspaceActionDialog.vue';
+import WorkspaceRepositoriesDialog from '../workspace-repositories-dialog/WorkspaceRepositoriesDialog.vue';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 import { WorkspaceApiService } from '../../../core/workspaces/workspace-api.service';
 import type { WorkspaceResponse } from '../../../core/workspaces/models/responses/workspace-response.model';
@@ -20,6 +21,7 @@ const error = ref('');
 const message = ref('');
 const dialogError = ref('');
 const action = ref<{ workspace: WorkspaceResponse; mode: 'rename' | 'delete' } | null>(null);
+const repositoryWorkspace = ref<WorkspaceResponse | null>(null);
 const formVersion = ref(0);
 let listRequest: AbortController | undefined;
 let saveRequest: AbortController | undefined;
@@ -119,6 +121,8 @@ onUnmounted(() => { listRequest?.abort(); saveRequest?.abort(); });
           <div class="workspace-row-actions" role="group" :aria-label="i18n.t('workspaceActions') + ': ' + workspace.name">
             <Button :label="i18n.t('renameWorkspace')" severity="secondary" :disabled="saving"
               @click="openAction(workspace, 'rename')" />
+            <Button :label="i18n.t('workspaceRepositories')" severity="secondary" :disabled="saving"
+              @click="repositoryWorkspace = workspace" />
             <button type="button" class="workspace-danger-action" :disabled="saving"
               @click="openAction(workspace, 'delete')">{{ i18n.t('deleteWorkspace') }}</button>
           </div>
@@ -133,6 +137,8 @@ onUnmounted(() => { listRequest?.abort(); saveRequest?.abort(); });
     <WorkspaceActionDialog v-if="action" :key="action.mode + ':' + action.workspace.id"
       :workspace="action.workspace" :mode="action.mode" :busy="saving" :error="dialogError"
       @rename="rename(action.workspace.id, $event)" @delete="remove(action.workspace.id)" @cancel="cancelAction" />
+    <WorkspaceRepositoriesDialog v-if="repositoryWorkspace" :key="repositoryWorkspace.id" :workspace="repositoryWorkspace"
+      @changed="load()" @close="repositoryWorkspace = null" />
   </section>
 </template>
 

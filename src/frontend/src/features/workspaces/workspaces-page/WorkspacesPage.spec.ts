@@ -5,6 +5,8 @@ import PrimeVue from 'primevue/config';
 import WorkspacesPage from './WorkspacesPage.vue';
 import WorkspaceCreateForm from '../workspace-create-form/WorkspaceCreateForm.vue';
 import WorkspaceActionDialog from '../workspace-action-dialog/WorkspaceActionDialog.vue';
+import WorkspaceRepositoriesDialog from '../workspace-repositories-dialog/WorkspaceRepositoriesDialog.vue';
+import { WorkspaceRepositoryApiService } from '../../../core/workspaces/workspace-repository-api.service';
 import { WorkspaceApiService } from '../../../core/workspaces/workspace-api.service';
 import { ApiError } from '../../../core/api/api-error';
 import { useLanguageStore } from '../../../core/i18n/language.store';
@@ -251,4 +253,19 @@ describe('workspaces page', () => {
     await flushPromises();
   });
 
+
+  it('opens repository management for the selected workspace, refreshes counts and closes it', async () => {
+    const list = vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces').mockResolvedValue(listing());
+    vi.spyOn(WorkspaceRepositoryApiService.prototype, 'getRepositories').mockResolvedValue({ success: true, result: [], errors: [], messages: [] });
+    const page = render(); await flushPromises();
+    const manage = page.findAll('.workspace-row-actions button').find(button => button.text() === 'Repositórios')!;
+    await manage.trigger('click'); await flushPromises();
+    const dialog = page.getComponent(WorkspaceRepositoriesDialog);
+    expect(dialog.props('workspace')).toEqual(workspace);
+    dialog.vm.$emit('changed'); await flushPromises();
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(page.findComponent(WorkspaceRepositoriesDialog).exists()).toBe(true);
+    dialog.vm.$emit('close'); await flushPromises();
+    expect(page.findComponent(WorkspaceRepositoriesDialog).exists()).toBe(false);
+  });
 });

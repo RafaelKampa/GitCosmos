@@ -8,5 +8,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services) =>
         services.AddScoped<ISystemService, SystemService>()
-            .AddScoped<IWorkspaceService, WorkspaceService>();
+            .AddScoped<IWorkspaceService, WorkspaceService>()
+            .AddScoped<IWorkspaceRepositoryService, WorkspaceRepositoryService>()
+            .AddScoped<ILocalFolderService, LocalFolderService>()
+            .AddScoped<IRepositoryCloneService, RepositoryCloneService>()
+            .AddScoped<IRepositoryImportService, RepositoryImportService>();
 }

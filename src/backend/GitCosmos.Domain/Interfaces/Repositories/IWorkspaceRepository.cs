@@ -5,6 +5,7 @@ namespace GitCosmos.Domain.Interfaces.Repositories;
 
 public interface IWorkspaceRepository : IRepository<Workspace>
 {
+    Task<bool> ExistsAsync(int id, CancellationToken cancellationToken = default);
     Task<bool> NameExistsAsync(string nameKey, CancellationToken cancellationToken = default);
     Task<bool> NameExistsAsync(string nameKey, int excludingId, CancellationToken cancellationToken = default);
     Task<Workspace?> GetFullByIdAsync(int id, CancellationToken cancellationToken = default);

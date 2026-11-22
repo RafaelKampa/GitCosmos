@@ -10,6 +10,12 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
     public async Task InvokeAsync(HttpContext context)
     {
         try { await next(context); }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // The caller disconnected; stop work without writing an error to a closed response.
+            context.Items[RequestLoggingMiddleware.ErrorCodeItemKey] = "request_cancelled";
+            context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+        }
         catch (Exception exception)
         {
             var error = exception switch

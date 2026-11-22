@@ -9,8 +9,8 @@ export class ApiBaseService {
     return this.request<T>(path, {}, signal);
   }
 
-  async post<T>(path: string, data: unknown, signal?: AbortSignal): Promise<CustomResponse<T>> {
-    return this.sendJson<T>('POST', path, data, signal);
+  async post<T>(path: string, data: unknown, signal?: AbortSignal, timeoutMilliseconds: number | null = 30_000): Promise<CustomResponse<T>> {
+    return this.sendJson<T>('POST', path, data, signal, timeoutMilliseconds);
   }
 
   async put<T>(path: string, data: unknown, signal?: AbortSignal): Promise<CustomResponse<T>> {
@@ -21,21 +21,22 @@ export class ApiBaseService {
     return this.request<T>(path, { method: 'DELETE' }, signal);
   }
 
-  private async sendJson<T>(method: 'POST' | 'PUT', path: string, data: unknown, signal?: AbortSignal): Promise<CustomResponse<T>> {
+  private async sendJson<T>(method: 'POST' | 'PUT', path: string, data: unknown, signal?: AbortSignal, timeoutMilliseconds: number | null = 30_000): Promise<CustomResponse<T>> {
     return this.request<T>(path, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }, signal);
+    }, signal, timeoutMilliseconds);
   }
 
-  private async request<T>(path: string, init: RequestInit, signal?: AbortSignal): Promise<CustomResponse<T>> {
-    const timeout = AbortSignal.timeout(30_000);
+  private async request<T>(path: string, init: RequestInit, signal?: AbortSignal, timeoutMilliseconds: number | null = 30_000): Promise<CustomResponse<T>> {
+    const timeout = timeoutMilliseconds === null ? undefined : AbortSignal.timeout(timeoutMilliseconds);
+    const signals = [signal, timeout].filter((value): value is AbortSignal => value !== undefined);
     try {
       const response = await fetch(path, {
         ...init,
         headers: { 'Accept-Language': this.language(), ...init.headers },
-        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+        signal: AbortSignal.any(signals),
       });
       const body = await response.json() as CustomResponse<T> & Partial<ErrorResponse>;
       if (!response.ok || !body.success)
@@ -43,7 +44,7 @@ export class ApiBaseService {
       return body;
     } catch (error: unknown) {
       if (error instanceof ApiError) throw error;
-      if (timeout.aborted) throw new ApiError(this.translate('timeout'));
+      if (timeout?.aborted) throw new ApiError(this.translate('timeout'));
       if (signal?.aborted) throw new ApiError(this.translate('cancelled'));
       throw new ApiError(this.translate('networkError'));
     }
