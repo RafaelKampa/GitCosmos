@@ -13,3 +13,12 @@ src/backend/GitCosmos.API/wwwroot/
 .idea/
 .env.local
 *.user
+
+# Local agent instructions, skills and project context
+/.agents/
+/.codex/
+AGENTS.md
+/GITCOSMOS_PROJECT_CONTEXT.md
+
+# Local architectural decision records
+/docs/decisions/

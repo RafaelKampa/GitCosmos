@@ -2,7 +2,7 @@
 
 Um cliente Git local para gerenciar repositórios independentes em um workspace unificado.
 
-O projeto está na fundação técnica. O MVP completo e as decisões estão em [.agents/GITCOSMOS_PROJECT_CONTEXT.md](.agents/GITCOSMOS_PROJECT_CONTEXT.md).
+O projeto está na fundação técnica.
 
 ## Requisitos
 
@@ -68,9 +68,9 @@ A logo PNG fornecida é exibida no cabeçalho a partir de `src/frontend/src/shar
 
 O botão de tema no cabeçalho alterna entre **Cosmic Dark** e **Cosmic Light**, preservando a escolha no navegador (`gitcosmos.theme`). Cosmic Dark é o padrão para a primeira visita e para preferências inválidas. Uma escolha clara já salva é respeitada; trocar o padrão não apaga a preferência do usuário. O idioma também é persistido localmente (`gitcosmos.language`). A logo é apresentada diretamente sobre o fundo do cabeçalho nos dois temas.
 
-Toda alteração visual deve respeitar as paletas de [.agents/GitCosmos-Cosmic-Light-Design-System.md](.agents/GitCosmos-Cosmic-Light-Design-System.md) e [.agents/GitCosmos-Cosmic-Dark-Design-System.md](.agents/GitCosmos-Cosmic-Dark-Design-System.md).
+A interface utiliza as paletas Cosmic Light e Cosmic Dark, com cores centralizadas nos tokens globais.
 
-Todas as cores customizadas ficam em `src/frontend/src/shared/styles/tokens.css`: os tokens semânticos `--gc-*` reproduzem as paletas aprovadas para fundo, superfícies, texto, bordas, ações e estados Git. Os aliases `--color-*` conectam esses tokens à interface e ao preset PrimeVue. Cosmic Dark é a base de `:root`; `:root[data-theme='cosmic-light']` aplica o tema claro. Hover e escalas auxiliares são derivados dessas cores, sem valores fixos nos componentes. A classe `.dark` sincroniza o modo do PrimeVue. Alterações na paleta exigem atualização dos documentos de referência e dos tokens.
+Todas as cores customizadas ficam em `src/frontend/src/shared/styles/tokens.css`: os tokens semânticos `--gc-*` reproduzem as paletas aprovadas para fundo, superfícies, texto, bordas, ações e estados Git. Os aliases `--color-*` conectam esses tokens à interface e ao preset PrimeVue. Cosmic Dark é a base de `:root`; `:root[data-theme='cosmic-light']` aplica o tema claro. Hover e escalas auxiliares são derivados dessas cores, sem valores fixos nos componentes. A classe `.dark` sincroniza o modo do PrimeVue. Alterações na paleta devem ser refletidas nos tokens globais e nos seus usos na interface.
 
 ## Execução integrada com frontend compilado
 
@@ -106,7 +106,6 @@ Por preferência do responsável, agentes devem fornecer esses comandos para exe
 - `src/backend`: API, Application, Domain e Infrastructure.
 - `src/frontend/src`: app, core, features, layout e shared.
 - `tests`: testes unitários backend.
-- `docs/decisions`: decisões arquiteturais.
 - `scripts`: build e validação.
 
 SQLite e EF Core estão configurados; entidades e migrations serão adicionadas com os workspaces. O MVP usa Git CLI, respeita a autenticação já configurada no computador e não requer Azure ou Docker.
