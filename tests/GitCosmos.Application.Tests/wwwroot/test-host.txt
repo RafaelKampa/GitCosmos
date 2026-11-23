@@ -1,0 +1,1 @@
+Static web root fixture for API host composition tests.

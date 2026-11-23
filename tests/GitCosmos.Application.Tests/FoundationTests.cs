@@ -270,7 +270,9 @@ public class FoundationTests
     {
         foreach (var args in new[] { Array.Empty<string>(), new[] { "--ConnectionStrings:GitCosmos=Data Source=:memory:" }, new[] { $"--contentRoot={Path.GetTempPath()}" } })
         {
-            await using var app = ApiHost.Build(args);
+            await using var app = ApiTestHost.Build(args);
+            Assert.Equal(ApiTestHost.WebRootPath, app.Services.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>().WebRootPath);
+            Assert.True(File.Exists(Path.Combine(ApiTestHost.WebRootPath, "test-host.txt")));
             using var scope = app.Services.CreateScope();
             Assert.IsType<SystemService>(scope.ServiceProvider.GetRequiredService<ISystemService>());
             Assert.NotNull(app.Services.GetRequiredService<IOptions<ApiBehaviorOptions>>().Value.InvalidModelStateResponseFactory);

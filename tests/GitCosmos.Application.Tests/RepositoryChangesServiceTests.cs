@@ -82,7 +82,7 @@ public class RepositoryChangesServiceTests
     [Fact]
     public async Task DependencyInjectionResolvesChangesReadersAndServices()
     {
-        await using var app = ApiHost.Build([]); using var scope = app.Services.CreateScope();
+        await using var app = ApiTestHost.Build(); using var scope = app.Services.CreateScope();
         Assert.IsType<RepositoryChangesService>(scope.ServiceProvider.GetRequiredService<IRepositoryChangesService>());
         Assert.IsType<RepositoryChangesReader>(scope.ServiceProvider.GetRequiredService<IRepositoryChangesReader>());
         Assert.IsType<GitProcessRunner>(scope.ServiceProvider.GetRequiredService<IBoundedGitProcessRunner>());

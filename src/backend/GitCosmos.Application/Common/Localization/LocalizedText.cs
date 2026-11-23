@@ -9,6 +9,10 @@ public static class LocalizedText
         ["pt-BR"] = new()
         {
             ["system.ready"] = "O GitCosmos está pronto para iniciar.",
+            ["catalog.already_registered"] = "Repositório já cadastrado no catálogo.",
+            ["catalog.clone_failed"] = "Clone concluído em {0}, mas o cadastro falhou. Os arquivos foram preservados; adicione a pasta como repositório local.",
+            ["catalog.clone_completed"] = "Repositório clonado e cadastrado em {0}.",
+            ["catalog.import_completed"] = "Verificação concluída: {0} adicionados, {1} já cadastrados, {2} ignorados e {3} com falha.",
             ["changes.invalid_selection"] = "Selecione um arquivo válido do repositório e a comparação preparada ou não preparada. Links de arquivos e pastas não são exibidos.",
             ["changes.stale"] = "O arquivo mudou ou não está mais nesta lista de alterações. Atualize o estado do repositório.",
             ["changes.diff_failed"] = "Não foi possível consultar as diferenças deste arquivo.",
@@ -61,6 +65,10 @@ public static class LocalizedText
         ["es"] = new()
         {
             ["system.ready"] = "GitCosmos está listo para comenzar.",
+            ["catalog.already_registered"] = "Repositorio ya registrado en el catálogo.",
+            ["catalog.clone_failed"] = "Clonación completada en {0}, pero el registro falló. Se conservaron los archivos; añada la carpeta como repositorio local.",
+            ["catalog.clone_completed"] = "Repositorio clonado y registrado en {0}.",
+            ["catalog.import_completed"] = "Verificación completada: {0} añadidos, {1} ya registrados, {2} ignorados y {3} con error.",
             ["changes.invalid_selection"] = "Seleccione un archivo válido del repositorio y la comparación preparada o sin preparar. No se muestran enlaces de archivos o carpetas.",
             ["changes.stale"] = "El archivo cambió o ya no está en la lista de cambios. Actualice el estado del repositorio.",
             ["changes.diff_failed"] = "No se pudieron consultar las diferencias de este archivo.",
@@ -113,6 +121,10 @@ public static class LocalizedText
         ["en"] = new()
         {
             ["system.ready"] = "GitCosmos is ready to start.",
+            ["catalog.already_registered"] = "Repository already registered in the catalog.",
+            ["catalog.clone_failed"] = "Clone completed at {0}, but registration failed. Files were preserved; add the folder as a local repository.",
+            ["catalog.clone_completed"] = "Repository cloned and registered at {0}.",
+            ["catalog.import_completed"] = "Scan completed: {0} added, {1} already registered, {2} ignored and {3} failed.",
             ["changes.invalid_selection"] = "Select a valid repository file and the staged or unstaged comparison. File and folder links are not displayed.",
             ["changes.stale"] = "The file changed or is no longer in this change list. Refresh the repository status.",
             ["changes.diff_failed"] = "Could not read the differences for this file.",

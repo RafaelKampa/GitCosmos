@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import Button from 'primevue/button';
 import { RepositoryChangesApiService } from '../../../core/repositories/repository-changes-api.service';
@@ -8,6 +8,7 @@ import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
 import FileChangesList from '../file-changes-list/FileChangesList.vue';
 import DiffViewer from '../diff-viewer/DiffViewer.vue';
+import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
 
 const props = defineProps<{ workspaceId: number; repositoryId: number }>();
 const i18n = useLanguageStore();
@@ -15,6 +16,9 @@ const api = new RepositoryChangesApiService(() => i18n.language, i18n.t);
 const repository = ref<RepositoryChanges | null>(null);
 const selection = ref<DiffSelection | null>(null);
 const diff = ref<FileDiff | null>(null);
+const preferences = useExplorerPreferences();
+const tab = computed({ get: () => preferences.repositoryTabs[props.repositoryId] ?? 'changes', set: (value: string) => { preferences.repositoryTabs[props.repositoryId] = value; } });
+const tabs = { changes: 'repositoryChangesTab', history: 'repositoryHistoryTab', branches: 'repositoryBranchesTab', remotes: 'repositoryRemotesTab' } as const;
 const loading = ref(true); const diffLoading = ref(false);
 const error = ref(''); const diffError = ref('');
 let listRequest: AbortController | undefined;
@@ -54,7 +58,7 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
 
 <template>
   <section class="repository-details" :aria-busy="loading">
-    <RouterLink :to="'/workspaces/' + workspaceId">{{ i18n.t('changesBack') }}</RouterLink>
+    <RouterLink :to="workspaceId ? '/workspaces/' + workspaceId : '/repositories'">{{ i18n.t('changesBack') }}</RouterLink>
     <div class="repository-heading">
       <div>
         <h1>{{ repository ? repository.name : i18n.t('changesTitle') }}</h1>
@@ -64,12 +68,15 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
             <span v-if="!repository.status.hasCommits"> · {{ i18n.t('gitNoCommits') }}</span></p>
         </template>
       </div>
-      <Button :label="i18n.t('dashboardRefresh')" :disabled="loading" @click="load" />
+      <div class="page-actions"><Button :label="i18n.t('dashboardRefresh')" :disabled="loading" @click="load" /><div class="bulk-actions" :title="i18n.t('operationsUpcoming')"><button disabled>Fetch</button><button disabled>Pull</button><button disabled>Push</button></div></div>
     </div>
     <p v-if="loading" role="status">{{ i18n.t('changesLoading') }}</p>
     <p v-else-if="error" role="alert">{{ error }}</p>
     <template v-else-if="repository">
-      <p v-if="repository.files.length === 0" class="repository-clean" role="status">{{ i18n.t('changesClean') }}</p>
+      <dl class="repository-metrics"><div class="metric-tile ahead"><dt>{{ i18n.t('gitChangedFiles') }}</dt><dd>{{ repository.status.changedFiles }}</dd></div><div class="metric-tile ahead"><dt>{{ i18n.t('aheadMetric') }}</dt><dd>{{ repository.status.ahead ?? '—' }}</dd></div><div class="metric-tile behind"><dt>{{ i18n.t('behindMetric') }}</dt><dd>{{ repository.status.behind ?? '—' }}</dd></div></dl>
+      <nav class="repository-tabs" :aria-label="i18n.t('repositorySections')"><button v-for="(label, key) in tabs" :key="key" type="button" :aria-pressed="tab === key" @click="tab = key">{{ i18n.t(label) }}</button></nav>
+      <div v-if="tab !== 'changes'" class="empty-panel"><h2>{{ i18n.t(tabs[tab as keyof typeof tabs]) }}</h2><p>{{ i18n.t('repositorySectionUpcoming') }}</p></div>
+      <p v-else-if="repository.files.length === 0" class="repository-clean" role="status">{{ i18n.t('changesClean') }}</p>
       <div v-else class="repository-workbench">
         <FileChangesList :files="repository.files" :selected="selection" @select="select" />
         <section class="file-diff-panel" :aria-busy="diffLoading" :aria-label="i18n.t('changesDiff')">
@@ -86,12 +93,12 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
           <p v-else class="diff-feedback">{{ i18n.t('diffSelectFile') }}</p>
         </section>
       </div>
+      <div v-if="tab === 'changes'" class="commit-panel"><label>{{ i18n.t('commitMessage') }}<textarea disabled :placeholder="i18n.t('commitUpcoming')" /></label><button disabled>Commit</button></div>
     </template>
   </section>
 </template>
 
 <style scoped>
-:global(main:has(.repository-details)) { max-width: 1600px; padding-block: 2rem; }
 .repository-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-block: 1rem; }
 .repository-heading h1 { margin: .5rem 0; overflow-wrap: anywhere; font-size: clamp(1.5rem, 2vw, 2rem); line-height: 1.2; }
 .repository-path { color: var(--gc-text-muted); overflow-wrap: anywhere; }

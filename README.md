@@ -2,7 +2,7 @@
 
 Um cliente Git local para gerenciar repositórios independentes em um workspace unificado.
 
-As Milestones 1 e 2, incluindo seleção nativa, clonagem e adição automática de repositórios, foram validadas pelos testes manuais do usuário. A Milestone 3 está em andamento: dashboard com branch/estado local e tela individual com lista de alterações e diferenças implementados. Os testes e a cobertura do incremento atual aguardam execução manual.
+As Milestones 1 e 2, incluindo seleção nativa, clonagem e adição automática de repositórios, foram validadas pelos testes manuais do usuário. A Milestone 3 está em andamento. A interface utiliza Cosmic Explorer e Mission Control, com navegação persistente, catálogo global e tela individual de alterações/diffs. Os testes e a cobertura do incremento atual aguardam execução manual.
 
 ## Requisitos
 
@@ -131,9 +131,9 @@ Endpoints adicionais, com mensagens em pt-BR, es e en e documentação no Scalar
 Não há nova migration nem dependência de pacote para essas melhorias. Os novos testes usam repositórios temporários locais e não clonam a URL de exemplo. A validação manual deve conferir a seleção/cancelamento de pastas, a revisão do destino, a clonagem e a rejeição de uma pasta final já existente.
 ## Dashboard do workspace — Milestone 3
 
-Na lista de workspaces, clique em **Abrir dashboard**. A página `/workspaces/{id}` mostra o nome do workspace e um card por repositório, com nome, caminho, branch atual e estado **Limpo**, **Com alterações**, **Com conflitos** ou **Indisponível**. HEAD destacado e repositórios sem commits são identificados explicitamente.
+Na lista de workspaces, clique em **Abrir dashboard**, ou selecione o workspace no Explorer. A página `/workspaces/{id}` reutiliza a visão de repositórios do Mission Control, filtrada pelo workspace, com lista compacta ou cards, busca, favoritos, seleção e estado **Limpo**, **Com alterações**, **Com conflitos** ou **Indisponível**. O gerenciamento de vínculos continua disponível no botão **Repositórios**. As contagens detalhadas dos arquivos e os diffs ficam na tela individual.
 
-Os cards mostram contagens de arquivos alterados, modificados, adicionados, excluídos, renomeados, não rastreados e em conflito, além de preparados/não preparados para commit. O total de alterados conta cada entrada Git uma vez; as categorias podem se sobrepor (por exemplo, um arquivo pode estar preparado e também ter novas modificações). Cópias são contabilizadas como adições; alterações de tipo como modificações. Arquivos ignorados não entram na contagem; submódulos aparecem como entradas do repositório principal.
+O resumo mostra total de repositórios, modificados, atrás e à frente do upstream. Ahead/behind usam as referências locais existentes e não executam fetch; a falta de dados de rastreamento é indicada por `—`. O resumo conta repositórios, enquanto a linha/card mostra a quantidade individual de commits à frente/atrás. No detalhe, o total de arquivos alterados conta cada entrada Git uma vez; categorias podem se sobrepor. Arquivos ignorados não entram na contagem; submódulos aparecem como entradas do repositório principal.
 
 A consulta usa [`git status --porcelain=v2 -z`](https://git-scm.com/docs/git-status), com nomes separados por NUL e detecção de renomeações, sem editar arquivos, atualizar o índice ou acessar remotes. As consultas são sequenciais por workspace, com no máximo duas leituras de estado simultâneas no processo da API. Cada comando mantém o timeout de 10 segundos; o cliente não aplica timeout fixo ao conjunto e cancela a requisição ao sair da página ou trocar workspace/idioma. Uma pasta removida, movida ou que deixou de ser raiz Git aparece indisponível sem ocultar os demais repositórios.
 
@@ -162,7 +162,29 @@ Endpoints documentados no Scalar, ambos com envelope `CustomResponse`:
 
 Validação manual sugerida: escolha um arquivo modificado, prepare parte das alterações por uma ferramenta externa e edite novamente. Compare os dois grupos, confira um arquivo novo, um binário e uma renomeação; troque rapidamente de arquivo e teste atualização e os dois temas. Os testes unitários preparados usam apenas fixtures temporárias locais, sem rede; sua execução continua manual. Histórico/grafo, operações de staging/commit e comparação lado a lado continuam pendentes.
 
-## Marca e temas
+## Cosmic Explorer e Mission Control
+
+A entrada `/` é o **Mission Control**: quatro indicadores de estado, atalhos para workspaces e repositórios do catálogo único. **Todos os repositórios** (`/repositories`) compartilha a mesma base visual; a visão de workspace aplica seu escopo. A logo PNG aprovada permanece no cabeçalho, sem fundo branco. Cores, foco, seleção e estados usam os tokens Cosmic existentes; H1 mantém a cor de marca aprovada.
+
+O Explorer permanece à esquerda, com workspaces expansíveis e a seção **Sem workspace**. Nomes longos são abreviados visualmente; a largura pode ser ajustada em **Configurações**. O botão do cabeçalho recolhe a árvore. Em telas estreitas ela começa recolhida se não houver preferência salva. A barra inferior informa a disponibilidade do catálogo local e o total registrado. A antiga página de conexão continua em `/connection`, acessível por Configurações.
+
+Nome/link navega; checkbox seleciona para um contexto independente. **Selecionar os visíveis** considera apenas as linhas resultantes da busca/filtros. Alternar lista/cards e trocar tema não apaga a seleção ou os filtros. Favoritos, tema, idioma, visualização, largura e recolhimento do Explorer ficam no navegador; filtros/seleção por escopo e aba do repositório permanecem durante a sessão.
+
+**Adicionar repositório** no catálogo permite selecionar uma raiz Git ou um contêiner para detecção automática dos filhos imediatos, sem criar um workspace implícito. **Clonar repositório** também funciona sem workspace, preservando revisão/confirmação do destino e autenticação Git existente. Um cadastro por caminho canônico é reutilizado em todos os contextos. Remover um vínculo ou excluir workspace mantém o registro global e os arquivos; sem vínculos ativos, ele aparece em Sem workspace. A rota `/repositories/{id}` abre os diffs diretamente, sem depender de workspace.
+
+O detalhe do repositório tem cabeçalho compacto, indicadores de arquivos/ahead/behind e seções Alterações, Histórico, Branches e Remotes. Alterações usa a leitura/diff real já implementada. As demais seções, Commit e ações Fetch/Pull/Push ficam claramente indisponíveis até suas implementações. O painel inferior **Operações** é recolhível e independente da rota; nesta etapa apresenta estado vazio de operações em lote. Não há dados demonstrativos, progresso fictício ou integração SignalR de operações ainda inexistentes.
+
+Novos endpoints do catálogo, todos documentados no Scalar com `CustomResponse`:
+
+- `GET /api/RepositoryCatalog/GetExplorer`: metadados reais de workspaces ativos, repositórios únicos e IDs dos vínculos.
+- `GET /api/RepositoryCatalog/GetOverview`: os mesmos dados com leitura real de estado Git por repositório.
+- `POST /api/RepositoryCatalog/AddRepository`: `{ "localPath": "C:/Repos" }`, com relatório por pasta.
+- `POST /api/RepositoryCatalog/Preview` e `/CloneRepository`: `remoteUrl`, `parentPath` e, na confirmação, `destinationPath`.
+- `GET /api/RepositoryCatalog/GetChanges?repositoryId=1` e `/GetDiff?repositoryId=1&path=src%2Ffile.txt&area=working`: acesso ao registro global, com as mesmas proteções do diff.
+
+As rotas e APIs existentes de workspace continuam disponíveis. Não há nova migration ou dependência. A validação visual considerou desktop, ambos os temas e largura de 390 px, usando dados locais reais. Execute manualmente a suíte completa para verificar testes e cobertura deste incremento.
+
+### Identidade e paletas
 
 A logo PNG fornecida é exibida no cabeçalho a partir de `src/frontend/src/shared/assets/branding`, preservando sua transparência e sem fundo aplicado por CSS. O favicon e o ícone para dispositivos Apple usam o PNG transparente de `src/frontend/public`. As versões SVG permanecem disponíveis nos assets originais, sem uso na interface atual.
 

@@ -1,5 +1,8 @@
 export interface GitWorkingTreeStatus {
   branch: string;
+  upstream?: string | null;
+  ahead?: number | null;
+  behind?: number | null;
   isDetached: boolean;
   hasCommits: boolean;
   changedFiles: number;

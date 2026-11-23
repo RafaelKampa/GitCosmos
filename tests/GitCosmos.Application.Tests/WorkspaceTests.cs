@@ -220,7 +220,7 @@ public class WorkspaceTests
     [Fact]
     public async Task CompositionRoot_ResolvesWorkspaceAndMigrationServices()
     {
-        await using var app = ApiHost.Build([]);
+        await using var app = ApiTestHost.Build();
         using var scope = app.Services.CreateScope();
         Assert.IsType<WorkspaceService>(scope.ServiceProvider.GetRequiredService<IWorkspaceService>());
         Assert.IsType<Repository>(scope.ServiceProvider.GetRequiredService<IWorkspaceRepository>());

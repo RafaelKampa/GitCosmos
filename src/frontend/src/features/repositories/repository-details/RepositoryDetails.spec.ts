@@ -38,6 +38,16 @@ describe('repository details', () => {
     page.getComponent(FileChangesList).vm.$emit('select', selection); await flushPromises();
   }
 
+  it('offers honest upcoming sections and preserves the active repository tab when changing language', async () => {
+    vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValue(changes);
+    const page = render(); await flushPromises();
+    await page.findAll('.repository-tabs button').find(button => button.text() === 'Histórico')!.trigger('click');
+    expect(page.get('.empty-panel').text()).toContain('próximos incrementos'); expect(page.findComponent(FileChangesList).exists()).toBe(false);
+    useLanguageStore().setLanguage('en'); await flushPromises(); expect(page.get('.repository-tabs button[aria-pressed="true"]').text()).toBe('History');
+    await page.setProps({ repositoryId: 3, workspaceId: 0 }); await flushPromises();
+    expect(page.get('a').attributes('href')).toBe('/repositories'); expect(page.get('.repository-tabs button[aria-pressed="true"]').text()).toBe('Changes');
+  });
+
   it('opens the linked repository, loads a selected diff and resets selection on refresh', async () => {
     const pending = deferred<typeof changes>();
     const list = vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockReturnValueOnce(pending.promise).mockResolvedValue(changes);

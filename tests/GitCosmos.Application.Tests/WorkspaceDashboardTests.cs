@@ -95,7 +95,7 @@ public class WorkspaceDashboardTests
     [Fact]
     public async Task DependencyInjectionResolvesDashboardServices()
     {
-        await using var app = ApiHost.Build([]); using var scope = app.Services.CreateScope();
+        await using var app = ApiTestHost.Build(); using var scope = app.Services.CreateScope();
         Assert.IsType<WorkspaceDashboardService>(scope.ServiceProvider.GetRequiredService<IWorkspaceDashboardService>());
         Assert.IsType<RepositoryStatusReader>(scope.ServiceProvider.GetRequiredService<IRepositoryStatusReader>());
     }

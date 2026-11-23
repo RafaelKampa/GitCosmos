@@ -18,6 +18,8 @@ it('encodes path and area as query data with workspace, repository, language and
   expect(timeout).not.toHaveBeenCalled();
   controller.abort(); expect(fetchMock.mock.calls[1]![1].signal.aborted).toBe(true);
   await api.getChanges(1, 2); await api.getDiff(1, 2, { path: 'file', area: 'working' });
+  await api.getChanges(0, 2); expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('/api/RepositoryCatalog/GetChanges?'), expect.any(Object));
+  await api.getDiff(0, 2, { path: 'file', area: 'working' }); expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('/api/RepositoryCatalog/GetDiff?'), expect.any(Object));
   fetchMock.mockImplementation(async () => new Response(JSON.stringify({ success: false, errors: ['Arquivo mudou'] }), { status: 409 }));
   await expect(api.getDiff(1, 2, { path: 'file', area: 'working' })).rejects.toMatchObject({ status: 409, message: 'Arquivo mudou' });
 });

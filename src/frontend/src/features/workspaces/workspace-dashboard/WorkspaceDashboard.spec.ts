@@ -3,7 +3,8 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import PrimeVue from 'primevue/config';
 import WorkspaceDashboard from './WorkspaceDashboard.vue';
-import RepositoryStatusCard from '../repository-status-card/RepositoryStatusCard.vue';
+import RepositoryOverview from '../../explorer/repository-overview/RepositoryOverview.vue';
+import WorkspaceRepositoriesDialog from '../workspace-repositories-dialog/WorkspaceRepositoriesDialog.vue';
 import { WorkspaceDashboardApiService } from '../../../core/workspaces/workspace-dashboard-api.service';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
@@ -29,6 +30,7 @@ describe('workspace dashboard', () => {
     wrapper = mount(WorkspaceDashboard, { props: { workspaceId: 1 }, global: { plugins: [PrimeVue], stubs: {
       RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' },
       Button: { props: ['label', 'disabled'], template: '<button :disabled="disabled">{{ label }}</button>' },
+      WorkspaceRepositoriesDialog: { props: ['workspace'], emits: ['close', 'changed'], template: '<div class="repositories-dialog-probe" />' },
     } } });
     return wrapper;
   }
@@ -39,16 +41,17 @@ describe('workspace dashboard', () => {
     const page = render();
     expect(page.get('[role="status"]').text()).toContain('Consultando');
     expect(page.get('button').attributes('disabled')).toBeDefined();
-    expect(page.get('a').attributes('href')).toBe('/workspaces');
+    expect(page.get('a').attributes('href')).toBe('/');
     pending.resolve(populated); await flushPromises();
     expect(page.get('h1').text()).toContain('Team');
-    expect(page.findAllComponents(RepositoryStatusCard)).toHaveLength(2);
-    expect(page.get('.repository-open-link').attributes('href')).toBe('/workspaces/1/repositories/1');
+    expect(page.getComponent(RepositoryOverview).props('repositories')).toHaveLength(2);
+    const repositoryLinks = Object.fromEntries(page.findAll('.repository-open-link').map(link => [link.get('strong').text(), link.attributes('href')]));
+    expect(repositoryLinks).toEqual({ repo: '/workspaces/1/repositories/1', missing: '/workspaces/1/repositories/2' });
     expect(page.text()).toContain('Pasta indisponível');
-    expect(page.text()).toContain('As contagens podem se sobrepor');
+    expect(page.text()).toContain('Ahead/behind');
     await page.get('button').trigger('click'); await flushPromises();
     expect(api).toHaveBeenCalledTimes(2);
-    expect(page.findAllComponents(RepositoryStatusCard)).toHaveLength(0);
+    expect(page.getComponent(RepositoryOverview).props('repositories')).toHaveLength(0);
     expect(page.text()).toContain('ainda não possui repositórios');
   });
 
@@ -63,13 +66,37 @@ describe('workspace dashboard', () => {
     expect(page.find('[role="alert"]').exists()).toBe(false);
   });
 
+  it('manages repositories, reloads after changes and notifies the catalog', async () => {
+    const pending = deferred();
+    const api = vi.spyOn(WorkspaceDashboardApiService.prototype, 'getDashboard')
+      .mockResolvedValueOnce(populated).mockReturnValueOnce(pending.promise);
+    const page = render();
+    expect(page.findAll('.page-actions button')[1]!.attributes('disabled')).toBeDefined();
+    await flushPromises();
+    await page.findAll('.page-actions button')[1]!.trigger('click');
+    let dialog = page.getComponent(WorkspaceRepositoriesDialog);
+    expect(dialog.props('workspace')).toEqual({ id: 1, name: 'Team' });
+    dialog.vm.$emit('changed'); await flushPromises();
+    expect(api).toHaveBeenCalledTimes(2);
+    expect(page.emitted('catalogChanged')).toHaveLength(1);
+    expect(page.findComponent(WorkspaceRepositoriesDialog).exists()).toBe(false);
+    expect(page.findAll('.page-actions button')[1]!.attributes('disabled')).toBeDefined();
+    pending.resolve({ ...empty, result: { ...empty.result!, name: 'Updated team' } });
+    await flushPromises();
+    dialog = page.getComponent(WorkspaceRepositoriesDialog);
+    expect(dialog.props('workspace')).toEqual({ id: 1, name: 'Updated team' });
+    dialog.vm.$emit('close'); await flushPromises();
+    expect(page.findComponent(WorkspaceRepositoriesDialog).exists()).toBe(false);
+    expect(page.get('h1').text()).toBe('Updated team');
+  });
+
   it('uses the selected language in real HTTP requests', async () => {
     useLanguageStore().setLanguage('es');
     const fetchMock = vi.fn().mockImplementation(async () => new globalThis.Response(JSON.stringify(empty)));
     vi.stubGlobal('fetch', fetchMock);
     const page = render(); await flushPromises();
     expect(fetchMock).toHaveBeenCalledWith('/api/WorkspaceDashboard/GetDashboard?workspaceId=1', expect.objectContaining({ headers: { 'Accept-Language': 'es' } }));
-    expect(page.get('h1').text()).toContain('Dashboard del workspace');
+    expect(page.get('h1').text()).toBe('Team');
     useLanguageStore().setLanguage('en'); await flushPromises();
     expect(fetchMock).toHaveBeenLastCalledWith('/api/WorkspaceDashboard/GetDashboard?workspaceId=1', expect.objectContaining({ headers: { 'Accept-Language': 'en' } }));
   });
@@ -82,7 +109,7 @@ describe('workspace dashboard', () => {
     expect(api.mock.calls[0]![1]!.aborted).toBe(true);
     expect(api).toHaveBeenLastCalledWith(2, expect.any(AbortSignal));
     stale.resolve(populated); await flushPromises();
-    expect(page.findAllComponents(RepositoryStatusCard)).toHaveLength(0);
+    expect(page.getComponent(RepositoryOverview).props('repositories')).toHaveLength(0);
   });
 
   it.each([true, false])('aborts on unmount and ignores late completion: success=%s', async success => {

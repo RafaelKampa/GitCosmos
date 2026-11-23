@@ -52,7 +52,7 @@ public class FolderSelectionTests
         var failed = CustomResponse<FolderSelectionResponse>.Fail("invalid");
         service.Setup(x => x.SelectAsync(request, source.Token)).ReturnsAsync(failed);
         Assert.Same(failed, Assert.IsType<BadRequestObjectResult>(await controller.SelectFolder(request, source.Token)).Value);
-        await using var app = ApiHost.Build([]);
+        await using var app = ApiTestHost.Build();
         using var scope = app.Services.CreateScope();
         Assert.IsType<LocalFolderService>(scope.ServiceProvider.GetRequiredService<ILocalFolderService>());
         Assert.IsType<WindowsFolderPicker>(scope.ServiceProvider.GetRequiredService<ILocalFolderPicker>());

@@ -12,6 +12,7 @@ import type { CustomResponse } from '../../../shared/models/custom-response.mode
 import { ApiError } from '../../../core/api/api-error';
 
 const i18n = useLanguageStore();
+const emit = defineEmits<{ catalogChanged: [] }>();
 const api = new WorkspaceApiService(() => i18n.language, i18n.t);
 const items = ref<readonly WorkspaceResponse[]>([]);
 const page = ref(0);
@@ -65,6 +66,7 @@ async function mutate(operation: (signal: AbortSignal) => Promise<CustomResponse
     if (!request.signal.aborted) {
       message.value = response.messages.join(' ');
       onSuccess();
+      emit('catalogChanged');
       // Renaming can change the ordering; deleting can empty the current page.
       await load(0);
     }
@@ -140,7 +142,7 @@ onUnmounted(() => { listRequest?.abort(); saveRequest?.abort(); });
       :workspace="action.workspace" :mode="action.mode" :busy="saving" :error="dialogError"
       @rename="rename(action.workspace.id, $event)" @delete="remove(action.workspace.id)" @cancel="cancelAction" />
     <WorkspaceRepositoriesDialog v-if="repositoryWorkspace" :key="repositoryWorkspace.id" :workspace="repositoryWorkspace"
-      @changed="load()" @close="repositoryWorkspace = null" />
+      @changed="load(); emit('catalogChanged')" @close="repositoryWorkspace = null" />
   </section>
 </template>
 

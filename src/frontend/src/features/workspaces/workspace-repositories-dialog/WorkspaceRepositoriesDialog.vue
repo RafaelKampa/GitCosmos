@@ -12,7 +12,7 @@ import type { CustomResponse } from '../../../shared/models/custom-response.mode
 import type { RepositoryImportResponse } from '../../../core/workspaces/models/responses/repository-import-response.model';
 import { ApiError } from '../../../core/api/api-error';
 
-const props = defineProps<{ workspace: WorkspaceResponse }>();
+const props = defineProps<{ workspace: Pick<WorkspaceResponse, 'id' | 'name'> }>();
 const emit = defineEmits<{ close: []; changed: [] }>();
 const i18n = useLanguageStore();
 const api = new WorkspaceRepositoryApiService(() => i18n.language, i18n.t);

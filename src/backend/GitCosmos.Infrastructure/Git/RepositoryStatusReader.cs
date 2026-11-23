@@ -18,7 +18,7 @@ public class RepositoryStatusReader(IGitProcessRunner runner, IGitRepositoryInsp
             if (!string.Equals(repository.LocalPath, Path.TrimEndingDirectorySeparator(Path.GetFullPath(localPath)), StringComparison.OrdinalIgnoreCase))
                 throw new ValidationAppException(LocalizedText.Get("dashboard.root_changed"));
             var result = await runner.RunAsync(repository.LocalPath,
-                ["-c", "core.fsmonitor=false", "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all", "--ignore-submodules=none", "--renames", "--no-ahead-behind"], cancellationToken);
+                ["-c", "core.fsmonitor=false", "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all", "--ignore-submodules=none", "--renames", "--ahead-behind"], cancellationToken);
             if (result.ExitCode != 0) throw new OperationFailedAppException(LocalizedText.Get("dashboard.status_failed"));
             return GitStatusParser.Parse(result.Output);
         }

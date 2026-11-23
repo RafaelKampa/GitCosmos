@@ -222,7 +222,7 @@ public class RepositoryImportTests
     [Fact]
     public async Task DependencyInjectionResolvesImportServices()
     {
-        await using var app = ApiHost.Build([]);
+        await using var app = ApiTestHost.Build();
         using var scope = app.Services.CreateScope();
         Assert.IsType<RepositoryImportService>(scope.ServiceProvider.GetRequiredService<IRepositoryImportService>());
         Assert.IsType<ChildFolderReader>(scope.ServiceProvider.GetRequiredService<IChildFolderReader>());

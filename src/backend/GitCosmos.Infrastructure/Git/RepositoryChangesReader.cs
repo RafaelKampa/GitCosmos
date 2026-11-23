@@ -23,7 +23,7 @@ public class RepositoryChangesReader(IBoundedGitProcessRunner runner, IGitReposi
         if (!string.Equals(root.LocalPath, Path.TrimEndingDirectorySeparator(Path.GetFullPath(localPath)), StringComparison.OrdinalIgnoreCase))
             throw new ValidationAppException(LocalizedText.Get("dashboard.root_changed"));
         var result = await runner.RunLimitedAsync(localPath,
-            ["-c", "core.fsmonitor=false", "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all", "--ignore-submodules=none", "--renames", "--no-ahead-behind"], 1_000_000, cancellationToken);
+            ["-c", "core.fsmonitor=false", "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all", "--ignore-submodules=none", "--renames", "--ahead-behind"], 1_000_000, cancellationToken);
         if (result.ExitCode != 0) throw new OperationFailedAppException(LocalizedText.Get("dashboard.status_failed"));
         if (result.Truncated) throw new OperationFailedAppException(LocalizedText.Get("changes.list_limit"));
         return GitChangesParser.Parse(result.Output);

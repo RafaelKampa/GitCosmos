@@ -137,7 +137,7 @@ public class RepositoryLinkTests
     [Fact]
     public async Task CompositionRoot_ResolvesRepositoryManagementAndGit()
     {
-        await using var app = ApiHost.Build([]);
+        await using var app = ApiTestHost.Build();
         using var scope = app.Services.CreateScope();
         Assert.IsType<WorkspaceRepositoryService>(scope.ServiceProvider.GetRequiredService<IWorkspaceRepositoryService>());
         Assert.IsType<RepositoryLinkRepository>(scope.ServiceProvider.GetRequiredService<IRepositoryLinkRepository>());

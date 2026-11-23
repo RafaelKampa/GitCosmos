@@ -6,7 +6,9 @@ import Button from 'primevue/button';
 import FolderPathField from '../../../shared/components/folder-path-field/FolderPathField.vue';
 import RepositoryCloneForm from './RepositoryCloneForm.vue';
 import { RepositoryCloneApiService } from '../../../core/workspaces/repository-clone-api.service';
+import { CatalogApiService } from '../../../core/catalog/catalog-api.service';
 import { ApiError } from '../../../core/api/api-error';
+import { useLanguageStore } from '../../../core/i18n/language.store';
 import type { RepositoryClonePlan } from '../../../core/workspaces/models/requests/repository-clone.model';
 import type { CustomResponse } from '../../../shared/models/custom-response.model';
 
@@ -16,13 +18,22 @@ const completed = { success: true, result: { id: 5, name: 'GitCosmosTest2', loca
 let wrapper: VueWrapper | undefined;
 beforeEach(() => { localStorage.clear(); setActivePinia(createPinia()); });
 afterEach(() => { wrapper?.unmount(); wrapper = undefined; vi.unstubAllGlobals(); });
-function render(disabled = false) {
-  wrapper = mount(RepositoryCloneForm, { props: { workspaceId: 1, disabled }, global: { plugins: [PrimeVue], stubs: {
+function render(disabled = false, workspaceId = 1) {
+  wrapper = mount(RepositoryCloneForm, { props: { workspaceId, disabled }, global: { plugins: [PrimeVue], stubs: {
     Button: { props: ['label', 'disabled'], template: '<button :disabled="disabled">{{ label }}</button>' },
   } } });
   return wrapper;
 }
 async function fill(page: VueWrapper) { await page.get('#clone-repository-url').setValue(plan.remoteUrl); await page.get('#clone-parent-path').setValue(plan.parentPath); }
+
+it('clones into the standalone catalog without creating an implicit workspace', async () => {
+  vi.spyOn(CatalogApiService.prototype, 'preview').mockResolvedValue(preview);
+  const clone = vi.spyOn(CatalogApiService.prototype, 'clone').mockResolvedValue(completed);
+  const page = render(false, 0); await fill(page); await page.get('form').trigger('submit'); await flushPromises();
+  expect(clone).not.toHaveBeenCalled(); await page.get('.clone-confirm').trigger('click'); await flushPromises();
+  expect(clone).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 0, destinationPath: plan.destinationPath }), expect.any(AbortSignal));
+  expect(page.emitted('changed')).toHaveLength(1);
+});
 
 it('previews the exact folder and clones only after explicit confirmation', async () => {
   const api = vi.spyOn(RepositoryCloneApiService.prototype, 'preview').mockResolvedValue(preview);
@@ -34,6 +45,29 @@ it('previews the exact folder and clones only after explicit confirmation', asyn
   expect(clone).not.toHaveBeenCalled();
   await page.get('.clone-confirm').trigger('click'); await flushPromises();
   expect(clone).toHaveBeenCalledWith({ workspaceId: 1, remoteUrl: plan.remoteUrl, parentPath: plan.parentPath, destinationPath: plan.destinationPath }, expect.any(AbortSignal));
+  expect(page.emitted('changed')).toHaveLength(1);
+  expect(page.get('[role="status"]').text()).toBe('Cloned');
+});
+
+it('uses the current language for standalone preview and clone HTTP requests', async () => {
+  const fetchMock = vi.fn()
+    .mockImplementationOnce(async () => new Response(JSON.stringify(preview)))
+    .mockImplementationOnce(async () => new Response(JSON.stringify(completed)));
+  vi.stubGlobal('fetch', fetchMock);
+  useLanguageStore().setLanguage('es');
+  const page = render(false, 0); await fill(page);
+  await page.get('form').trigger('submit'); await flushPromises();
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/RepositoryCatalog/Preview', expect.objectContaining({
+    headers: { 'Accept-Language': 'es', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspaceId: 0, remoteUrl: plan.remoteUrl, parentPath: plan.parentPath })
+  }));
+  expect(page.get('.clone-preview code').text()).toBe(plan.destinationPath);
+  useLanguageStore().setLanguage('en');
+  await page.get('.clone-confirm').trigger('click'); await flushPromises();
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/RepositoryCatalog/CloneRepository', expect.objectContaining({
+    headers: { 'Accept-Language': 'en', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspaceId: 0, remoteUrl: plan.remoteUrl, parentPath: plan.parentPath, destinationPath: plan.destinationPath })
+  }));
   expect(page.emitted('changed')).toHaveLength(1);
   expect(page.get('[role="status"]').text()).toBe('Cloned');
 });
