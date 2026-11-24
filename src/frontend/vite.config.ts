@@ -11,7 +11,12 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Avoid starting a separate Node process for each file on Windows.
+    // Keep each file isolated and run only one worker at a time.
+    pool: 'threads',
     maxWorkers: 1,
+    fileParallelism: false,
+    isolate: true,
     testTimeout: 15000,
     restoreMocks: true,
     coverage: {

@@ -9,6 +9,7 @@ public record GitCommitDetails(GitCommit Commit, IReadOnlyList<GitCommitFile> Fi
 public interface IRepositoryHistoryReader
 {
     Task<GitHistoryPage> ReadAsync(string localPath, int page, int pageSize, string? snapshot, CancellationToken cancellationToken = default);
+    Task<GitHistoryPage> ReadFilteredAsync(string localPath, int page, int pageSize, string? snapshot, string? branch, string? search, CancellationToken cancellationToken = default);
     Task<GitCommitDetails> ReadCommitAsync(string localPath, string sha, CancellationToken cancellationToken = default);
     Task<GitFileDiff> ReadDiffAsync(string localPath, string sha, string path, CancellationToken cancellationToken = default);
 }

@@ -12,6 +12,8 @@ public class RepositoryHistoryRequestValidator : AbstractValidator<RepositoryHis
         RuleFor(x => x.WorkspaceId).GreaterThanOrEqualTo(0).WithMessage(_ => LocalizedText.Get("workspace.invalid_id"));
         RuleFor(x => x.Page).InclusiveBetween(0, 10000).WithMessage(_ => LocalizedText.Get("history.invalid"));
         RuleFor(x => x.PageSize).InclusiveBetween(1, 100).WithMessage(_ => LocalizedText.Get("history.invalid"));
+        RuleFor(x => x.Branch).Must(value => value is null || value.Length <= 255 && !value.Any(char.IsControl)).WithMessage(_ => LocalizedText.Get("history.invalid"));
+        RuleFor(x => x.Search).Must(value => value is null || value.Length <= 200 && !value.Any(char.IsControl)).WithMessage(_ => LocalizedText.Get("history.invalid"));
         RuleFor(x => x.Snapshot).Must((request, value) =>
             value is null ? request.Page == 0 : value.Length == 64 && value.All(Uri.IsHexDigit))
             .WithMessage(_ => LocalizedText.Get("history.invalid"));

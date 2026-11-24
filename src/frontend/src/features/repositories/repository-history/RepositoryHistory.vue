@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, useId, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue';
 import { RepositoryHistoryApiService } from '../../../core/repositories/repository-history-api.service';
 import type { GitCommit, CommitDetails, CommitDiff } from '../../../core/repositories/models/repository-history.model';
 import { useLanguageStore } from '../../../core/i18n/language.store';
@@ -12,9 +12,15 @@ import AuthorAvatar from '../../../shared/components/author-avatar/AuthorAvatar.
 import HorizontalScroll from '../../../shared/components/horizontal-scroll/HorizontalScroll.vue';
 import { foldMergeHistory } from './merge-folding';
 import FileStatusBadge from '../../../shared/components/file-status-badge/FileStatusBadge.vue';
+import HistoryFilters from './HistoryFilters.vue';
+import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
 
 const props = defineProps<{ workspaceId: number; repositoryId: number }>();
 const i18n = useLanguageStore();
+const preferences = useExplorerPreferences();
+const filters = ref(preferences.historyFilters[props.repositoryId] || { branch: '', search: '' });
+const historyList = ref<HTMLElement>(); const focusNotice = ref('');
+let pendingFocus = preferences.historyNavigation[props.repositoryId]?.sha || ''; let focusVersion = 0;
 const api = new RepositoryHistoryApiService(() => i18n.language, i18n.t);
 const accordionId = useId();
 const commits = ref<readonly GitCommit[]>([]);
@@ -44,20 +50,36 @@ function clearSelection() {
 async function load(reset = true) {
   if (!reset && loading.value) return;
   listRequest?.abort();
-  if (reset) { commits.value = []; collapsedMerges.value = new Set(); snapshot.value = null; page.value = 0; hasMore.value = false; clearSelection(); }
+  if (reset) { focusVersion++; focusNotice.value = ''; pendingFocus = preferences.historyNavigation[props.repositoryId]?.sha || ''; commits.value = []; collapsedMerges.value = new Set(); snapshot.value = null; page.value = 0; hasMore.value = false; clearSelection(); }
   const current = new AbortController(); listRequest = current;
   loading.value = true; error.value = '';
   try {
-    const response = await api.getHistory(props.workspaceId, props.repositoryId, page.value, snapshot.value, current.signal);
+    const response = filters.value.branch || filters.value.search
+      ? await api.getHistory(props.workspaceId, props.repositoryId, page.value, snapshot.value, current.signal, filters.value)
+      : await api.getHistory(props.workspaceId, props.repositoryId, page.value, snapshot.value, current.signal);
     if (!current.signal.aborted) {
       if (!response.result) throw new ApiError(i18n.t('historyError'));
       commits.value = [...commits.value, ...response.result.commits];
       snapshot.value = response.result.snapshot; hasMore.value = response.result.hasMore; page.value++;
+      if (reset && !pendingFocus && (filters.value.branch || filters.value.search) && commits.value.length) void selectCommit(commits.value[0]!.sha);
     }
   } catch (cause: unknown) { if (!current.signal.aborted) error.value = message(cause); }
-  finally { if (!current.signal.aborted) loading.value = false; }
+  finally { if (!current.signal.aborted) { loading.value = false; if (pendingFocus) { const sha = pendingFocus; pendingFocus = ''; void focusCommit(sha); } } }
 }
-async function selectCommit(sha: string) {
+async function focusCommit(sha: string) {
+  if (!/^(?:[a-f\d]{40}|[a-f\d]{64})$/i.test(sha)) return;
+  const version = ++focusVersion; focusNotice.value = '';
+  await selectCommit(sha, true);
+  for (let attempts = 0; attempts < 200 && version === focusVersion && !commits.value.some(commit => commit.sha === sha) && hasMore.value && !loading.value && !error.value; attempts++) await load(false);
+  if (version !== focusVersion) return;
+  const expanded = new Set(collapsedMerges.value);
+  for (const merge of collapsedMerges.value) if (foldMergeHistory(commits.value, new Set([merge])).hidden.has(sha)) expanded.delete(merge);
+  if (expanded.size !== collapsedMerges.value.size) collapsedMerges.value = expanded;
+  if (!commits.value.some(commit => commit.sha === sha)) focusNotice.value = i18n.t('historyFocusOutside');
+  await nextTick(); historyList.value?.querySelector<HTMLElement>('[data-sha="' + sha + '"]')?.scrollIntoView?.({ block: 'nearest' });
+}
+async function selectCommit(sha: string, focused = false) {
+  if (!focused) { focusVersion++; pendingFocus = ''; focusNotice.value = ''; }
   clearSelection(); selected.value = sha;
   const current = new AbortController(); detailsRequest = current; detailsLoading.value = true;
   try {
@@ -94,20 +116,27 @@ async function selectFile(path: string) {
   finally { if (!current.signal.aborted) diffLoading.value = false; }
 }
 onMounted(load);
-watch([() => props.workspaceId, () => props.repositoryId, () => i18n.language], () => load());
-onUnmounted(() => { listRequest?.abort(); clearSelection(); });
+function applyFilters(value: { branch: string; search: string }) { delete preferences.historyNavigation[props.repositoryId]; pendingFocus = ''; filters.value = value; preferences.historyFilters[props.repositoryId] = value; void load(); }
+watch([() => props.workspaceId, () => props.repositoryId, () => i18n.language], (value, old) => {
+  if (value[0] !== old[0] || value[1] !== old[1]) filters.value = preferences.historyFilters[props.repositoryId] || { branch: '', search: '' };
+  void load();
+});
+watch(() => preferences.historyNavigation[props.repositoryId], value => { if (value?.sha) { pendingFocus = value.sha; if (!loading.value) { pendingFocus = ''; void focusCommit(value.sha); } } });
+onUnmounted(() => { focusVersion++; listRequest?.abort(); clearSelection(); });
 </script>
 
 <template>
   <section class="repository-history" :aria-label="i18n.t('repositoryHistoryTab')">
     <div class="history-toolbar"><p>{{ i18n.t('historyLocal') }}</p><button class="history-refresh" type="button" :disabled="loading" @click="load()">{{ i18n.t('dashboardRefresh') }}</button></div>
+    <HistoryFilters :workspace-id="workspaceId" :repository-id="repositoryId" :branch="filters.branch" :search="filters.search" @apply="applyFilters" />
     <p v-if="error" role="alert">{{ error }}</p>
+    <p v-if="focusNotice" role="status">{{ focusNotice }}</p>
     <p v-if="loading" role="status">{{ i18n.t('historyLoading') }}</p>
-    <p v-else-if="!error && commits.length === 0" role="status">{{ i18n.t('historyEmpty') }}</p>
+    <p v-else-if="!error && commits.length === 0" role="status">{{ i18n.t(filters.branch || filters.search ? 'historyNoMatches' : 'historyEmpty') }}</p>
     <div class="history-workbench">
-      <section class="history-list" :aria-label="i18n.t('historyCommits')" :style="{ '--history-graph-width': graphWidth + 'px' }">
+      <section ref="historyList" class="history-list" :aria-label="i18n.t('historyCommits')" :style="{ '--history-graph-width': graphWidth + 'px' }">
         <div class="history-columns" aria-hidden="true"><span /><span>{{ i18n.t('historySubject') }}</span><span>{{ i18n.t('historyAuthor') }}</span><span>{{ i18n.t('historyCommit') }}</span><span>{{ i18n.t('historyDate') }}</span></div>
-        <div v-for="(commit, index) in folded.commits" :key="commit.sha" class="history-row" :class="{ selected: selected === commit.sha }" :style="{ height: graph[index]!.height + 'px' }">
+        <div v-for="(commit, index) in folded.commits" :key="commit.sha" class="history-row" :data-sha="commit.sha" :class="{ selected: selected === commit.sha }" :style="{ height: graph[index]!.height + 'px' }">
           <span class="graph-cell">
             <svg :width="graphWidth" :height="graph[index]!.height" aria-hidden="true" class="commit-graph">
               <path v-for="(segment, edge) in graph[index]!.segments" :key="edge" :d="segment" :stroke="graphColor(graph[index]!.segmentColors[edge]!)" />

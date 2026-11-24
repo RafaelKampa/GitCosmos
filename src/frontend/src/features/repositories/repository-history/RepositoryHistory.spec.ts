@@ -8,6 +8,8 @@ import DiffViewer from '../diff-viewer/DiffViewer.vue';
 import { RepositoryHistoryApiService } from '../../../core/repositories/repository-history-api.service';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
+import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
+import HistoryFilters from './HistoryFilters.vue';
 import type { CustomResponse } from '../../../shared/models/custom-response.model';
 import type { GitCommit, HistoryPage, CommitDetails, CommitDiff } from '../../../core/repositories/models/repository-history.model';
 
@@ -31,6 +33,62 @@ function mock() {
   const diff = vi.spyOn(RepositoryHistoryApiService.prototype, 'getDiff').mockResolvedValue(ok(patch));
   return { list, detail, diff };
 }
+
+it('moves selection to a branch tip while retaining all commits and any explicitly applied filters', async () => {
+  const api = mock(); const other = { ...commit, sha: 'b'.repeat(40), parents: [] };
+  api.list.mockResolvedValueOnce(ok({ ...page, commits: [other, commit] }));
+  useExplorerPreferences().historyNavigation[2] = { branch: 'main', sha: commit.sha, revision: 1 };
+  const view = render(); await flushPromises();
+  expect(api.list).toHaveBeenLastCalledWith(1, 2, 0, null, expect.any(AbortSignal));
+  expect(view.findAll('.commit-choice')).toHaveLength(2); expect(view.get('.history-row.selected').attributes('data-sha')).toBe(commit.sha);
+  expect(view.getComponent(HistoryFilters).props()).toMatchObject({ branch: '', search: '' }); expect(view.text()).toContain('Todos os commits');
+  useExplorerPreferences().historyNavigation[2] = { branch: 'other', sha: other.sha, revision: 2 }; await flushPromises();
+  expect(api.list).toHaveBeenCalledTimes(1); expect(view.get('.history-row.selected').attributes('data-sha')).toBe(other.sha);
+  view.getComponent(HistoryFilters).vm.$emit('apply', { branch: 'main', search: 'fix' }); await flushPromises();
+  expect(api.list).toHaveBeenLastCalledWith(1, 2, 0, null, expect.any(AbortSignal), { branch: 'main', search: 'fix' });
+  const calls = api.list.mock.calls.length; useExplorerPreferences().historyNavigation[2] = { branch: 'other', sha: commit.sha, revision: 3 }; await flushPromises();
+  expect(api.list).toHaveBeenCalledTimes(calls); expect(view.getComponent(HistoryFilters).props()).toMatchObject({ branch: 'main', search: 'fix' });
+  useLanguageStore().setLanguage('en'); await flushPromises(); expect(view.getComponent(HistoryFilters).props('search')).toBe('fix');
+  view.getComponent(HistoryFilters).vm.$emit('apply', { branch: '', search: '' }); await flushPromises(); expect(view.find('.commit-sha').exists()).toBe(false);
+});
+it('loads additional unfiltered pages to reveal a branch tip without removing newer commits', async () => {
+  const api = mock(); const other = { ...commit, sha: 'b'.repeat(40), parents: [] };
+  api.list.mockResolvedValueOnce(ok({ ...page, commits: [other], hasMore: true })).mockResolvedValueOnce(ok(page));
+  useExplorerPreferences().historyNavigation[2] = { branch: 'feature', sha: commit.sha, revision: 1 };
+  const view = render(); await flushPromises(); expect(api.list).toHaveBeenLastCalledWith(1, 2, 1, 's', expect.any(AbortSignal));
+  expect(view.findAll('.commit-choice')).toHaveLength(2); expect(view.get('.history-row.selected').attributes('data-sha')).toBe(commit.sha);
+});
+it('preserves filters when a tip is outside their results and ignores invalid navigation identifiers', async () => {
+  const api = mock(); const other = { ...commit, sha: 'b'.repeat(40), parents: [] };
+  api.list.mockResolvedValue(ok({ ...page, commits: [other] }));
+  useExplorerPreferences().historyFilters[2] = { branch: 'other', search: '' }; useExplorerPreferences().historyNavigation[2] = { branch: 'main', sha: commit.sha, revision: 1 };
+  const view = render(); await flushPromises(); expect(view.text()).toContain('filtros foram preservados'); expect(view.getComponent(HistoryFilters).props('branch')).toBe('other');
+  const calls = api.detail.mock.calls.length; useExplorerPreferences().historyNavigation[2] = { branch: 'bad', sha: 'invalid', revision: 2 }; await flushPromises(); expect(api.detail).toHaveBeenCalledTimes(calls);
+});
+it('reveals a branch tip inside a folded merge without reloading or changing the filter', async () => {
+  const api = mock(); const merge = { ...commit, sha: 'c'.repeat(40), parents: [commit.sha, 'b'.repeat(40)] };
+  api.list.mockResolvedValue(ok({ ...page, commits: [merge, { ...commit, sha: 'b'.repeat(40), refs: '', parents: ['d'.repeat(40)] }, { ...commit, refs: '', parents: ['d'.repeat(40)] }, { ...commit, sha: 'd'.repeat(40), refs: '', parents: [] }] }));
+  const view = render(); await flushPromises(); await view.get('.merge-toggle').trigger('click'); await flushPromises(); expect(view.findAll('.commit-choice')).toHaveLength(3);
+  useExplorerPreferences().historyNavigation[2] = { branch: 'feature', sha: 'b'.repeat(40), revision: 1 }; await flushPromises();
+  expect(view.findAll('.commit-choice')).toHaveLength(4); expect(view.get('.history-row.selected').attributes('data-sha')).toBe('b'.repeat(40)); expect(api.list).toHaveBeenCalledTimes(1);
+});
+it('waits for a pending list before focusing and cancels an obsolete selection when another commit is chosen', async () => {
+  const api = mock(); const listing = deferred<CustomResponse<HistoryPage>>(); const selecting = deferred<CustomResponse<CommitDetails>>();
+  api.list.mockReturnValueOnce(listing.promise); api.detail.mockReturnValueOnce(selecting.promise);
+  const view = render(); await flushPromises(); useExplorerPreferences().historyNavigation[2] = { branch: 'main', sha: commit.sha, revision: 1 }; await flushPromises();
+  listing.resolve(ok({ ...page, commits: [commit, { ...commit, sha: 'b'.repeat(40) }] })); await flushPromises();
+  await view.findAll('.commit-choice')[1]!.trigger('click'); await flushPromises();
+  selecting.resolve(ok(details)); await flushPromises(); expect(view.get('.history-row.selected').attributes('data-sha')).toBe('b'.repeat(40));
+});
+it('cancels obsolete history searches and leaves no selected commit for empty results', async () => {
+  const api = mock(); const pending = deferred<CustomResponse<HistoryPage>>(); api.list.mockReturnValueOnce(pending.promise).mockResolvedValue(ok({ ...page, commits: [] }));
+  const view = render(); await flushPromises();
+  view.getComponent(HistoryFilters).vm.$emit('apply', { branch: '', search: 'missing' }); await flushPromises();
+  expect(api.list.mock.calls[0]![4]!.aborted).toBe(true);
+  pending.resolve(ok(page)); await flushPromises(); expect(view.findAll('.commit-choice')).toHaveLength(0); expect(api.detail).not.toHaveBeenCalled();
+  await view.setProps({ repositoryId: 3, workspaceId: 0 }); await flushPromises();
+  expect(view.getComponent(HistoryFilters).props()).toMatchObject({ branch: '', search: '' });
+});
 
 it('loads pages, preserves graph edges, displays commit details and selects committed file diffs safely', async () => {
   const api = mock(); const pending = deferred<CustomResponse<HistoryPage>>();

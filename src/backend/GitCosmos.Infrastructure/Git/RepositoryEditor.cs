@@ -13,7 +13,6 @@ public class RepositoryEditor(IBoundedGitProcessRunner reader, IGitMutationRunne
 {
     // Bounded stripes serialize all worktrees sharing a Git common directory,
     // including access through different workspaces, without an unbounded map.
-    private static readonly SemaphoreSlim[] Locks = Enumerable.Range(0, 64).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
     private record Prepared(RepositoryEditPlan Plan, string? Remote, string? RemoteRef, string RemoteUrls);
 
     private async Task<T> LockedAsync<T>(string path, Func<Task<T>> action, CancellationToken cancellationToken)
@@ -22,8 +21,7 @@ public class RepositoryEditor(IBoundedGitProcessRunner reader, IGitMutationRunne
         if (!root.LocalPath.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)), StringComparison.OrdinalIgnoreCase))
             throw new ValidationAppException(LocalizedText.Get("dashboard.root_changed"));
         var common = (await ReadAsync(path, ["rev-parse", "--path-format=absolute", "--git-common-dir"], cancellationToken)).Trim();
-        var key = StringComparer.OrdinalIgnoreCase.GetHashCode(common) & int.MaxValue;
-        var gate = Locks[key % Locks.Length];
+        var gate = GitRepositoryMutationLock.For(common);
         await gate.WaitAsync(cancellationToken);
         try { return await action(); }
         finally { gate.Release(); }

@@ -92,18 +92,36 @@ public class GitRepositoryTests
     }
 
     [Fact]
-    public async Task Runner_CancelsAndTimesOutBlockedReadOnlyGitProcesses()
+    public async Task Runner_CancelsAndTimesOutBlockedProcesses()
     {
         await using var fixture = await GitTestDirectory.CreateAsync();
-        // --batch waits for standard input; the runner owns that redirected pipe.
-        using var source = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
+        // The runner closes stdin, so cat-file --batch exits on EOF instead of blocking.
+        // Use a fixed, read-only child command that waits independently of stdin.
+        var executable = OperatingSystem.IsWindows()
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe")
+            : "/bin/sh";
+        string[] arguments = OperatingSystem.IsWindows()
+            ? ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "Start-Sleep -Seconds 60"]
+            : ["-c", "sleep 60"];
+        using var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            new GitProcessRunner("git", TimeSpan.FromSeconds(10)).RunAsync(fixture.RepositoryPath, ["cat-file", "--batch"], source.Token));
+            new GitProcessRunner(executable, TimeSpan.FromSeconds(10)).RunAsync(fixture.RepositoryPath, arguments, source.Token));
         var timeout = await Assert.ThrowsAsync<OperationFailedAppException>(() =>
-            new GitProcessRunner("git", TimeSpan.FromMilliseconds(150)).RunAsync(fixture.RepositoryPath, ["cat-file", "--batch"]));
+            new GitProcessRunner(executable, TimeSpan.FromSeconds(1)).RunAsync(fixture.RepositoryPath, arguments));
         Assert.Equal(LocalizedText.Get("repository.git_timeout"), timeout.Message);
         var version = await new GitProcessRunner("git", TimeSpan.FromSeconds(10)).RunAsync(fixture.RepositoryPath, ["--version"]);
         Assert.Equal(0, version.ExitCode); Assert.Contains("git version", version.Output);
+    }
+
+    [Fact]
+    public async Task Runner_ClosesStandardInputSoBatchGitExitsNormally()
+    {
+        await using var fixture = await GitTestDirectory.CreateAsync();
+        var result = await new GitProcessRunner("git", TimeSpan.FromSeconds(10))
+            .RunAsync(fixture.RepositoryPath, ["cat-file", "--batch"]);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Empty(result.Output);
     }
 }
 

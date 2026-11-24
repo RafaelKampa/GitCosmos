@@ -21,6 +21,7 @@ public static class DependencyInjection
             .AddScoped<IRepositoryChangesReader, RepositoryChangesReader>()
             .AddScoped<IRepositoryHistoryReader, RepositoryHistoryReader>()
             .AddScoped<IRepositoryEditor, RepositoryEditor>()
+            .AddScoped<IRepositoryBranches, RepositoryBranches>()
             .AddSingleton<IGitMutationRunner, GitMutationRunner>()
             .AddScoped<IGitRepositoryInspector, GitRepositoryInspector>()
             .AddScoped<IRepositoryStatusReader, RepositoryStatusReader>()

@@ -30,7 +30,8 @@ public class RepositoryHistoryServiceTests
         var links = new Mock<IRepositoryLinkRepository>(); var reader = new Mock<IRepositoryHistoryReader>(MockBehavior.Strict);
         var service = new RepositoryHistoryService(catalog.Object, workspaces.Object, links.Object, reader.Object);
         foreach (var request in new RepositoryHistoryRequest[] { new(0), new(1, -1), new(1, Page: -1), new(1, Page: 10001),
-            new(1, PageSize: 0), new(1, PageSize: 101), new(1, Page: 1), new(1, Snapshot: "bad"), new(1, Snapshot: new string('z', 64)) })
+            new(1, PageSize: 0), new(1, PageSize: 101), new(1, Page: 1), new(1, Snapshot: "bad"), new(1, Snapshot: new string('z', 64)),
+            new(1, Branch: new string('x', 256)), new(1, Branch: "bad\0"), new(1, Search: new string('x', 201)), new(1, Search: "bad\n") })
             await Assert.ThrowsAsync<ValidationAppException>(() => service.GetAsync(request));
         foreach (var request in new RepositoryCommitRequest[] { new(0, Sha), new(1, Sha, -1), new(1, "HEAD"), new(1, null!), new(1, new string('z', 40)) })
             await Assert.ThrowsAsync<ValidationAppException>(() => service.GetCommitAsync(request));
@@ -56,6 +57,11 @@ public class RepositoryHistoryServiceTests
         reader.Setup(x => x.ReadDiffAsync("persisted path", Sha, "file", source.Token)).ReturnsAsync(diff);
         Assert.Same(page, (await service.GetAsync(new(1), source.Token)).Result);
         Assert.Same(page, (await service.GetAsync(new(1, 2), source.Token)).Result);
+        reader.Setup(x => x.ReadFilteredAsync("persisted path", 0, 50, null, "main", "fix", source.Token)).ReturnsAsync(page);
+        Assert.Same(page, (await service.GetAsync(new(1, Branch: "main", Search: "fix"), source.Token)).Result);
+        reader.Setup(x => x.ReadFilteredAsync("persisted path", 0, 50, null, null, "fix", source.Token)).ReturnsAsync(page);
+        Assert.Same(page, (await service.GetAsync(new(1, Search: "fix"), source.Token)).Result);
+        Assert.Same(page, (await service.GetAsync(new(1, Branch: "", Search: " "), source.Token)).Result);
         Assert.Same(details, (await service.GetCommitAsync(new(1, Sha, 2), source.Token)).Result);
         Assert.Same(diff, (await service.GetDiffAsync(new(1, Sha, "file"), source.Token)).Result);
         reader.Setup(x => x.ReadAsync("persisted path", 1, 50, new string('A', 64), source.Token)).ThrowsAsync(new OperationCanceledException());

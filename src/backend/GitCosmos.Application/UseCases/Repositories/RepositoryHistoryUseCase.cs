@@ -28,7 +28,9 @@ public class RepositoryHistoryUseCase(IRepositoryCatalogRepository catalog, IWor
     {
         new RepositoryHistoryRequestValidator().ValidateAndThrowApp(request);
         var repository = await FindAsync(request.RepositoryId, request.WorkspaceId, cancellationToken);
-        return CustomResponse<GitHistoryPage>.Ok(await reader.ReadAsync(repository.LocalPath, request.Page, request.PageSize, request.Snapshot, cancellationToken));
+        return CustomResponse<GitHistoryPage>.Ok(string.IsNullOrEmpty(request.Branch) && string.IsNullOrWhiteSpace(request.Search)
+            ? await reader.ReadAsync(repository.LocalPath, request.Page, request.PageSize, request.Snapshot, cancellationToken)
+            : await reader.ReadFilteredAsync(repository.LocalPath, request.Page, request.PageSize, request.Snapshot, request.Branch, request.Search, cancellationToken));
     }
 
     public async Task<CustomResponse<GitCommitDetails>> GetCommitAsync(RepositoryCommitRequest request, CancellationToken cancellationToken = default)

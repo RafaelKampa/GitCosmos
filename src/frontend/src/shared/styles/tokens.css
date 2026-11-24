@@ -1,6 +1,7 @@
 /* Source palettes: .agents/GitCosmos-Cosmic-{Dark,Light}-Design-System.md.
    Keep custom colors here; components and PrimeVue consume semantic aliases. */
 :root {
+  --gc-tree-indent: 1rem;
   --gc-white: #FFFFFF;
   --color-neutral-0: var(--gc-white);
   --color-neutral-50: #F8FAFF;

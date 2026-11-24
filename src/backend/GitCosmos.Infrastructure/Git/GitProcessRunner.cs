@@ -32,7 +32,7 @@ public class GitProcessRunner(string executable, TimeSpan timeout) : IGitProcess
         };
         foreach (var argument in arguments) process.StartInfo.ArgumentList.Add(argument);
         // An inherited Git context must never redirect inspection to another repository.
-        foreach (var variable in new[] { "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES" })
+        foreach (var variable in new[] { "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_SEQUENCE_EDITOR", "GIT_EDITOR" })
             process.StartInfo.Environment.Remove(variable);
         process.StartInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";
         process.StartInfo.Environment["GIT_OPTIONAL_LOCKS"] = "0";

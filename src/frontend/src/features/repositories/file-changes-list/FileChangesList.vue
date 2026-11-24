@@ -30,7 +30,7 @@ function paths(area: string, files: readonly GitFileChange[]) {
 </template>
 
 <style scoped>
-.file-changes-list { min-width: 0; min-height: 0; background: var(--gc-surface); border: 1px solid var(--gc-border); border-radius: .5rem; display: grid; grid-template-rows: minmax(8rem, 1fr) minmax(8rem, 1fr); height: 100%; overflow: hidden; font-size: .8rem; }
+.file-changes-list { min-width: 0; min-height: 0; background: var(--gc-surface); border: 1px solid var(--gc-border); border-radius: .5rem; display: grid; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); height: 100%; overflow: hidden; font-size: .8rem; }
 section { min-height: 0; overflow: auto; }
 header { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1; background: var(--gc-surface-raised); border-bottom: 1px solid var(--gc-divider); padding: .35rem .5rem; }
 .move-files { padding: .25rem .5rem; color: var(--gc-text); background: var(--gc-surface); border: 1px solid var(--gc-border); border-radius: .25rem; cursor: pointer; }

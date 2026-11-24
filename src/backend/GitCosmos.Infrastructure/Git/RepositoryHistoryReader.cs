@@ -44,16 +44,48 @@ public class RepositoryHistoryReader(IBoundedGitProcessRunner runner, IGitReposi
     }
 
     public Task<GitHistoryPage> ReadAsync(string localPath, int page, int pageSize, string? snapshot, CancellationToken cancellationToken = default) =>
+        ReadFilteredAsync(localPath, page, pageSize, snapshot, null, null, cancellationToken);
+
+    public Task<GitHistoryPage> ReadFilteredAsync(string localPath, int page, int pageSize, string? snapshot, string? branch, string? search, CancellationToken cancellationToken = default) =>
         ReadAsync(localPath, async () =>
         {
-            var before = await SnapshotAsync(localPath, cancellationToken);
+            search = search?.Trim();
+            string Scoped(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value + "\0" + branch + "\0" + search)));
+            var before = Scoped(await SnapshotAsync(localPath, cancellationToken));
             if (snapshot != null && !string.Equals(before, snapshot, StringComparison.OrdinalIgnoreCase)) throw Changed();
-            var output = await RunAsync(localPath,
-                ["log", "--single-worktree", "--all", "--topo-order", "--no-color", "--no-show-signature", "--no-notes", "--encoding=UTF-8", "--decorate=full", "-z",
-                    "--format=" + GitHistoryParser.Format, "--skip=" + (page * pageSize), "--max-count=" + (pageSize + 1), "--"], cancellationToken);
-            var commits = GitHistoryParser.ParseCommits(output);
-            if (before != await SnapshotAsync(localPath, cancellationToken)) throw Changed();
-            return new GitHistoryPage(commits.Take(pageSize).ToArray(), before, commits.Count > pageSize);
+            var revisions = new List<string> { "--all" };
+            if (!string.IsNullOrEmpty(branch))
+            {
+                var valid = await runner.RunLimitedAsync(localPath, ["check-ref-format", "refs/heads/" + branch], 256, cancellationToken);
+                if (valid.ExitCode != 0 || valid.Truncated) throw new ValidationAppException(LocalizedText.Get("history.invalid"));
+                var tip = await runner.RunLimitedAsync(localPath, ["rev-parse", "--verify", "--quiet", "--end-of-options", "refs/heads/" + branch + "^{commit}"], 256, cancellationToken);
+                if (tip.ExitCode != 0 || tip.Truncated || !GitHistoryParser.IsSha(tip.Output.Trim())) throw new NotFoundAppException(LocalizedText.Get("branch.missing"));
+                revisions = [tip.Output.Trim()];
+            }
+            var matches = new List<GitCommit>();
+            var searching = !string.IsNullOrEmpty(search); var offset = searching ? 0 : page * pageSize;
+            var skipMatches = searching ? page * pageSize : 0;
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var count = searching ? 200 : pageSize + 1;
+                var output = await RunAsync(localPath,
+                    ["log", "--single-worktree", "--topo-order", "--no-color", "--no-show-signature", "--no-notes", "--encoding=UTF-8", "--decorate=full", "-z",
+                        "--format=" + GitHistoryParser.Format, "--skip=" + offset, "--max-count=" + count, .. revisions, "--"], cancellationToken);
+                var commits = GitHistoryParser.ParseCommits(output);
+                foreach (var commit in commits)
+                {
+                    if (searching && !commit.Sha.StartsWith(search!, StringComparison.OrdinalIgnoreCase) && !commit.Message.Contains(search!, StringComparison.OrdinalIgnoreCase) && !commit.Subject.Contains(search!, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (skipMatches > 0) { skipMatches--; continue; }
+                    matches.Add(commit);
+                    if (matches.Count > pageSize) break;
+                }
+                if (!searching || matches.Count > pageSize || commits.Count < count) break;
+                offset += count;
+                if (offset >= 10000) throw new OperationFailedAppException(LocalizedText.Get("history.search_limit"));
+            }
+            if (before != Scoped(await SnapshotAsync(localPath, cancellationToken))) throw Changed();
+            return new GitHistoryPage(matches.Take(pageSize).ToArray(), before, matches.Count > pageSize);
         }, cancellationToken);
 
     public Task<GitCommitDetails> ReadCommitAsync(string localPath, string sha, CancellationToken cancellationToken = default) =>

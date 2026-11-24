@@ -19,6 +19,10 @@ export const useExplorerPreferences = defineStore('explorer-preferences', () => 
   const filters = ref<Record<string, RepositoryFilters>>({});
   const selected = ref<Record<string, number[]>>({});
   const repositoryTabs = ref<Record<number, string>>({});
+  const expandedRepositories = ref<Record<string, boolean>>({});
+  const repositoryVersions = ref<Record<number, number>>({});
+  const historyNavigation = ref<Record<number, { branch: string; sha?: string; revision: number }>>({});
+  const historyFilters = ref<Record<number, { branch: string; search: string }>>({});
   function scope(key: string) {
     filters.value[key] ??= { search: '', status: 'all', favoritesOnly: false, sort: 'name' };
     selected.value[key] ??= [];
@@ -37,5 +41,5 @@ export const useExplorerPreferences = defineStore('explorer-preferences', () => 
   watch(view, value => localStorage.setItem('gitcosmos.repositoryView', value));
   watch(sidebarWidth, value => localStorage.setItem('gitcosmos.explorerWidth', String(value)));
   watch(favorites, value => localStorage.setItem('gitcosmos.favorites', JSON.stringify(value)), { deep: true });
-  return { collapsed, view, favorites, operationsOpen, sidebarWidth, filters, selected, repositoryTabs, scope, toggleFavorite, toggleSelection, selectVisible };
+  return { collapsed, view, favorites, operationsOpen, sidebarWidth, filters, selected, repositoryTabs, expandedRepositories, repositoryVersions, historyNavigation, historyFilters, scope, toggleFavorite, toggleSelection, selectVisible };
 });

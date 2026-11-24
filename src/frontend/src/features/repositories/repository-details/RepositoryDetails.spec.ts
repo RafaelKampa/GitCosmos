@@ -8,6 +8,7 @@ import DiffViewer from '../diff-viewer/DiffViewer.vue';
 import RepositoryHistory from '../repository-history/RepositoryHistory.vue';
 import RepositoryCommitForm from '../repository-commit-form/RepositoryCommitForm.vue';
 import { RepositoryEditApiService } from '../../../core/repositories/repository-edit-api.service';
+import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
 import { RepositoryChangesApiService } from '../../../core/repositories/repository-changes-api.service';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
@@ -42,17 +43,59 @@ describe('repository details', () => {
     page.getComponent(FileChangesList).vm.$emit('select', selection); await flushPromises();
   }
 
-  it('offers honest upcoming sections and preserves the active repository tab when changing language', async () => {
+  it('keeps headings, metrics and navigation visible and preserves history when changing language', async () => {
     vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValue(changes);
     const page = render(); await flushPromises();
-    await page.findAll('.repository-tabs button').find(button => button.text() === 'Histórico')!.trigger('click');
+    expect(page.get('h1').text()).toBe('Repo');
+    expect(page.get('.repository-path').text()).toBe('C:/repo');
+    expect(page.findAll('.repository-metrics .metric-tile')).toHaveLength(3);
+    expect(page.findAll('.bulk-actions button').map(button => button.text())).toEqual(['Fetch', 'Pull', 'Push']);
+    expect(page.get('.repository-tabs button[aria-pressed="true"]').text()).toBe('Alterações locais');
+    await page.findAll('.repository-tabs button')[1]!.trigger('click'); await flushPromises();
+    expect(page.findAll('.repository-tabs button').map(button => button.text())).toEqual(['Alterações locais', 'Histórico']);
+    expect(page.find('.repository-metrics').exists()).toBe(true);
     expect(page.getComponent(RepositoryHistory).props()).toEqual({ workspaceId: 1, repositoryId: 2 });
     expect(page.findComponent(FileChangesList).exists()).toBe(false);
     useLanguageStore().setLanguage('en'); await flushPromises(); expect(page.get('.repository-tabs button[aria-pressed="true"]').text()).toBe('History');
-    await page.findAll('.repository-tabs button')[2]!.trigger('click');
-    expect(page.get('.empty-panel').text()).toContain('upcoming');
     await page.setProps({ repositoryId: 3, workspaceId: 0 }); await flushPromises();
-    expect(page.get('a').attributes('href')).toBe('/repositories'); expect(page.get('.repository-tabs button[aria-pressed="true"]').text()).toBe('Changes');
+    expect(page.get('a').attributes('href')).toBe('/repositories'); expect(page.get('.repository-tabs button[aria-pressed="true"]').text()).toBe('Local changes');
+    await page.findAll('.repository-tabs button')[1]!.trigger('click'); await flushPromises();
+    await page.findAll('.repository-tabs button')[0]!.trigger('click'); await flushPromises();
+    expect(page.findComponent(FileChangesList).exists()).toBe(true);
+  });
+
+  it.each(['branches', 'remotes', 'invalid'])('falls back to local changes for the old tab value %s', async value => {
+    useExplorerPreferences().repositoryTabs[2] = value;
+    vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValue(changes);
+    const page = render(); await flushPromises();
+    expect(page.get('.repository-tabs button[aria-pressed="true"]').text()).toBe('Alterações locais');
+    expect(page.find('.empty-panel').exists()).toBe(false);
+  });
+
+  it('places a single commit form below both the file trees and the selected diff', async () => {
+    vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValue(changes);
+    vi.spyOn(RepositoryChangesApiService.prototype, 'getDiff').mockResolvedValue(patch);
+    const page = render(); await flushPromises();
+    const workbench = page.get('.repository-workbench');
+    expect(Array.from(workbench.element.children).map(child => child.className)).toEqual(['file-changes-list', 'file-diff-panel', 'repository-commit-panel']);
+    expect(workbench.get('.repository-commit-panel').findAll('form')).toHaveLength(1);
+    await select(page);
+    expect(page.getComponent(DiffViewer).props('diff')).toEqual(patch.result);
+    expect(page.get('.file-diff-panel').find('form').exists()).toBe(false);
+    expect(page.find('.diff-and-commit').exists()).toBe(false);
+    expect(page.get('.repository-path').text()).toBe('C:/repo');
+    expect(page.find('.repository-metrics').exists()).toBe(true);
+    expect(page.find('.repository-tabs').exists()).toBe(true);
+  });
+
+  it('refreshes the active repository and history when a branch operation invalidates its state', async () => {
+    const api = vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValue(changes);
+    const page = render(); await flushPromises();
+    useExplorerPreferences().repositoryTabs[2] = 'history'; await flushPromises();
+    api.mockResolvedValueOnce({ ...changes, result: { ...changes.result!, status: { ...changes.result!.status, branch: 'feature/new' } } });
+    useExplorerPreferences().repositoryVersions[2] = 1; await flushPromises();
+    expect(api).toHaveBeenCalledTimes(2); expect(api).toHaveBeenLastCalledWith(1, 2, expect.any(AbortSignal));
+    expect(page.text()).toContain('feature/new'); expect(page.getComponent(RepositoryHistory).props('repositoryId')).toBe(2);
   });
 
   it('opens the linked repository, loads a selected diff and resets selection on refresh', async () => {
@@ -90,6 +133,7 @@ describe('repository details', () => {
     expect(prepare).toHaveBeenCalledWith(expect.objectContaining({ operation: 'stage', paths: ['file.txt'] }), expect.any(AbortSignal));
     page.getComponent(RepositoryCommitForm).vm.$emit('busy', true); await flushPromises();
     expect(page.get('.repository-heading button').attributes('disabled')).toBeDefined();
+    expect(page.getComponent(FileChangesList).props('disabled')).toBe(true);
     expect(page.findAll('.repository-tabs button').every(button => button.attributes('disabled') !== undefined)).toBe(true);
   });
 
@@ -97,6 +141,10 @@ describe('repository details', () => {
     const pending = deferred<typeof changes>();
     const api = vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValueOnce(changes).mockReturnValueOnce(pending.promise).mockResolvedValue(changes);
     const page = render(); await flushPromises(); const form = page.getComponent(RepositoryCommitForm);
+    const formElement = form.get('form').element;
+    await form.get('input:not([type="checkbox"])').setValue('Draft commit message');
+    await form.get('textarea').setValue('Draft commit description');
+    await form.get('input[type="checkbox"]').setValue(true);
     form.vm.$emit('changed', { operation: 'stage', head: 'sha', committed: false, pushAttempted: false, pushSucceeded: false, warning: outcome === 'warning' ? 'Push failed; commit saved' : null }, 'Completed'); await flushPromises();
     expect(page.get('.repository-heading button').attributes('disabled')).toBeDefined();
     if (outcome === 'aborted') { await page.setProps({ repositoryId: 3 }); await flushPromises(); pending.resolve(changes); }
@@ -104,7 +152,13 @@ describe('repository details', () => {
     else if (outcome === 'network') pending.reject(new Error('private'));
     else pending.resolve(outcome === 'incomplete' ? { ...changes, result: null } : changes);
     await flushPromises(); expect(api).toHaveBeenCalledTimes(outcome === 'aborted' ? 3 : 2);
-    if (outcome !== 'aborted') expect(page.getComponent(RepositoryCommitForm).vm).toBe(form.vm);
+    if (outcome !== 'aborted') {
+      const refreshedForm = page.getComponent(RepositoryCommitForm);
+      expect(refreshedForm.get('form').element).toBe(formElement);
+      expect(refreshedForm.get<HTMLInputElement>('input:not([type="checkbox"])').element.value).toBe('Draft commit message');
+      expect(refreshedForm.get<HTMLTextAreaElement>('textarea').element.value).toBe('Draft commit description');
+      expect(refreshedForm.get<HTMLInputElement>('input[type="checkbox"]').element.checked).toBe(true);
+    }
     if (outcome === 'warning' || outcome === 'api' || outcome === 'network' || outcome === 'incomplete') expect(page.get('.edit-warning').text()).toBeTruthy();
     else if (outcome === 'success') expect(page.text()).toContain('Completed');
     expect(page.get('.repository-heading button').attributes('disabled')).toBeUndefined();

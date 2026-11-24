@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 import { useExplorerStore } from '../../core/catalog/explorer.store';
 import { useLanguageStore } from '../../core/i18n/language.store';
 import { useExplorerPreferences } from '../../core/preferences/explorer-preferences.store';
+import ExplorerRepositoryNode from './ExplorerRepositoryNode.vue';
 const i18n = useLanguageStore(); const explorer = useExplorerStore(); const preferences = useExplorerPreferences();
 const closed = ref<number[]>([]);
 defineProps<{ activeRepositoryId?: number }>();
@@ -33,18 +34,13 @@ function toggle(id: number) { closed.value = closed.value.includes(id) ? closed.
 <RouterLink :to="'/workspaces/' + workspace.id">{{ workspace.name }}</RouterLink>
 </div>
 <ul v-if="!closed.includes(workspace.id)">
-<li v-for="repo in explorer.index.repositories.filter(item => item.workspaceIds.includes(workspace.id))" :key="repo.id">
-<RouterLink :class="{ 'explorer-active': activeRepositoryId === repo.id }" :to="'/workspaces/' + workspace.id + '/repositories/' + repo.id">{{ repo.name }}</RouterLink>
-</li>
+<ExplorerRepositoryNode v-for="repo in explorer.index.repositories.filter(item => item.workspaceIds.includes(workspace.id))" :key="repo.id" :repository-id="repo.id" :workspace-id="workspace.id" :name="repo.name" :active="activeRepositoryId === repo.id" :to="'/workspaces/' + workspace.id + '/repositories/' + repo.id" />
 </ul>
 </div>
   <p v-if="!explorer.loading && !explorer.error && explorer.index.workspaces.length === 0" class="explorer-feedback">{{ i18n.t('explorerNoWorkspaces') }}</p>
 <div class="explorer-section-label">{{ i18n.t('ungrouped') }}</div>
 <ul class="explorer-ungrouped">
-<li v-for="repo in ungrouped" :key="repo.id">
-<RouterLink :to="'/repositories/' + repo.id">
-<span aria-hidden="true">▤</span>{{ repo.name }}</RouterLink>
-</li>
+<ExplorerRepositoryNode v-for="repo in ungrouped" :key="repo.id" :repository-id="repo.id" :name="repo.name" :active="activeRepositoryId === repo.id" :to="'/repositories/' + repo.id" />
 </ul>
 <p v-if="!explorer.loading && !explorer.error && ungrouped.length === 0" class="explorer-feedback">{{ i18n.t('ungroupedEmpty') }}</p>
   <button type="button" class="explorer-root operations-toggle" :aria-expanded="preferences.operationsOpen" aria-controls="operations-drawer" @click="preferences.operationsOpen = !preferences.operationsOpen">
