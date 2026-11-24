@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../../../shared/components/material-icon/MaterialIcon.vue';
 import { computed } from 'vue';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 import { parseCommitReferences } from './history-presentation';
@@ -11,10 +12,8 @@ const labels = { branch: 'historyBranchRef', remote: 'historyRemoteRef', tag: 'h
 <template>
   <span class="commit-refs">
     <span v-for="reference in references" :key="reference.fullName" class="reference-pill" :class="[reference.kind, { current: reference.current }]" :title="i18n.t(labels[reference.kind]) + ': ' + reference.fullName">
-      <svg v-if="reference.kind === 'remote'" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h12v9H2zM5 14h6M8 11v3" /></svg>
-      <svg v-else-if="reference.kind === 'tag'" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h6l6 6-6 6-6-6z" /><circle cx="5" cy="5" r="1" /></svg>
-      <svg v-else viewBox="0 0 16 16" aria-hidden="true"><circle cx="4" cy="3" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="4" cy="13" r="2" /><path d="M4 5v6m0-3h4q4 0 4-3" /></svg>
-      <span v-if="reference.current" class="current-mark" aria-hidden="true">✓</span>{{ reference.label }}
+      <MaterialIcon :name="reference.kind === 'remote' ? 'cloud' : reference.kind === 'tag' ? 'label' : 'account_tree'" />
+      <MaterialIcon v-if="reference.current" class="current-mark" name="check" />{{ reference.label }}
     </span>
   </span>
 </template>
@@ -25,6 +24,5 @@ const labels = { branch: 'historyBranchRef', remote: 'historyRemoteRef', tag: 'h
 .remote { border-color: var(--gc-info); background: var(--gc-info-bg); }
 .tag { border-color: var(--gc-warning); background: var(--gc-warning-bg); }
 .current { font-weight: 700; border-color: var(--gc-primary); }
-svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.2; }
 .current-mark { color: var(--gc-primary); }
 </style>

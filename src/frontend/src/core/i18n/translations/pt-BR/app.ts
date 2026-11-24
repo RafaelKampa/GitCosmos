@@ -291,4 +291,10 @@ export default {
   cancelled: 'A requisição foi cancelada.',
   apiDocs: 'Documentação da API',
   foundation: 'Fundação em desenvolvimento',
+  resizeSidebar: 'Ajustar largura do Explorer',
+  resizeChangesWidth: 'Ajustar divisão entre arquivos e diff',
+  resizeChangesHeight: 'Ajustar altura dos painéis de alterações',
+  resizeStaged: 'Ajustar divisão entre Unstaged e Staged',
+  resizeHistoryGraph: 'Ajustar altura do grafo de commits',
+  resizeHistoryDetails: 'Ajustar altura dos detalhes do commit',
 };

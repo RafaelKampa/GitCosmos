@@ -291,4 +291,10 @@ export default {
   cancelled: 'The request was cancelled.',
   apiDocs: 'API documentation',
   foundation: 'Foundation in development',
+  resizeSidebar: 'Resize Explorer width',
+  resizeChangesWidth: 'Resize file tree and diff split',
+  resizeChangesHeight: 'Resize changes panel height',
+  resizeStaged: 'Resize Unstaged and Staged split',
+  resizeHistoryGraph: 'Resize commit graph height',
+  resizeHistoryDetails: 'Resize commit details height',
 };

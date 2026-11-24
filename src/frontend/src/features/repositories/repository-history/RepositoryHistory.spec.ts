@@ -34,6 +34,17 @@ function mock() {
   return { list, detail, diff };
 }
 
+it('resizes the graph and commit details without changing selected commits or loading history again', async () => {
+  const api = mock(); const view = render(); await flushPromises();
+  const handles = view.findAll('.history-workbench > .resize-handle');
+  expect(handles).toHaveLength(2);
+  await handles[0]!.trigger('keydown', { key: 'End' });
+  expect(view.get('.history-list').attributes('style')).toContain('height: 2000px');
+  await handles[1]!.trigger('keydown', { key: 'End' });
+  expect(view.get('.commit-details').attributes('style')).toContain('height: 2400px');
+  expect(api.list).toHaveBeenCalledTimes(1);
+});
+
 it('moves selection to a branch tip while retaining all commits and any explicitly applied filters', async () => {
   const api = mock(); const other = { ...commit, sha: 'b'.repeat(40), parents: [] };
   api.list.mockResolvedValueOnce(ok({ ...page, commits: [other, commit] }));

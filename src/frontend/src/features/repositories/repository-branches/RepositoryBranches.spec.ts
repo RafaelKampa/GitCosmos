@@ -29,6 +29,8 @@ function render(remoteMode = false) {
 it('searches names and navigates to a branch SHA without changing filters or checking out', async () => {
   const api = mock(); const page = render(); await flushPromises();
   expect(page.find('form').exists()).toBe(false); expect(page.find('.branch-actions-toggle').exists()).toBe(false);
+  expect(page.findAll('.branch-select .material-icon').map(icon => icon.attributes('data-icon'))).toEqual(['check', 'account_tree']);
+  expect(page.get('.branch-meta .material-icon').attributes('data-icon')).toBe('subdirectory_arrow_right');
   useExplorerPreferences().historyFilters[2] = { branch: 'main', search: 'saved' };
   await page.get('.branch-search input').setValue(' OTHER '); expect(page.findAll('.branch-select')).toHaveLength(1);
   await page.get('.branch-select').trigger('click'); await flushPromises();
@@ -66,6 +68,15 @@ it('keeps tracked local branches visible after loading resources and refreshing 
   expect(page.findAll('.branch-select')).toHaveLength(2);
   await page.get('.branch-search input').setValue('main');
   expect(page.get('.branch-select').text()).toContain('main');
+});
+it.each([false, true])('keeps full branch names and tip hashes in tooltips while using a truncatable label (remote=%s)', async remote => {
+  const api = mock(); const name = 'feature/a-very-long-branch-name-for-a-narrow-sidebar';
+  api.list.mockResolvedValue(ok({ ...data, branches: [{ ...data.branches[1]!, name }] }));
+  api.resources.mockResolvedValue(ok({ ...resources, branches: [{ ...resources.branches[0]!, name: 'origin/' + name, branch: name }] }));
+  const page = render(remote); await flushPromises();
+  expect(page.get('.branch-name').text()).toBe(name);
+  expect(page.get('.branch-select').attributes('title')).toBe((remote ? 'origin/' : '') + name + '\n' + 'b'.repeat(40));
+  expect(page.find('.branch-options').exists()).toBe(true);
 });
 it.each([false, true])('copies the chosen name or reports clipboard errors (failure=%s)', async failure => {
   mock(); const writeText = failure ? vi.fn().mockRejectedValue(new Error('denied')) : vi.fn().mockResolvedValue(undefined);

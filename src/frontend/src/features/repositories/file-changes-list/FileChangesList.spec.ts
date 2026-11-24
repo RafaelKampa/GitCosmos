@@ -16,6 +16,10 @@ it('separates both sides of a changed file, renames, untracked files and conflic
     { ...file, path: 'conflict', indexStatus: 'U', workTreeStatus: 'U', isConflicted: true },
   ] } });
   const groups = wrapper.findAll('section');
+  await wrapper.get('[role="separator"]').trigger('keydown', { key: 'ArrowDown' });
+  expect(wrapper.attributes('style')).toContain('52%');
+  expect(groups[0]!.get('.folder-icon').attributes('data-icon')).toBe('folder_open');
+  expect(groups[0]!.get('.file-icon').attributes('data-icon')).toBe('description');
   expect(groups[0]!.findAll('.file-change')).toHaveLength(3);
   expect(groups[1]!.findAll('.file-change')).toHaveLength(2);
   expect(wrapper.text()).toContain('← original');
@@ -48,6 +52,7 @@ it('moves the selected file or the eligible group and allows collapsing folders'
   await groups[1]!.get('.move-files').trigger('click');
   expect(wrapper.emitted('move')![2]).toEqual([{ operation: 'unstage', paths: [file.path] }]);
   await groups[0]!.get('.folder-toggle').trigger('click'); expect(groups[0]!.find('.file-change').exists()).toBe(false);
+  expect(groups[0]!.get('.folder-icon').attributes('data-icon')).toBe('folder');
   await groups[0]!.get('.folder-toggle').trigger('click'); expect(groups[0]!.findAll('.file-change')).toHaveLength(2);
   await wrapper.setProps({ disabled: true }); expect(groups[0]!.get('.move-files').attributes('disabled')).toBeDefined();
 });

@@ -35,6 +35,9 @@ it('resolves breadcrumbs from actual catalog data and preserves shell state acro
   vi.spyOn(CatalogApiService.prototype,'getExplorer').mockResolvedValue({success:true,result:index,errors:[],messages:[]});
   const blank={emits:['catalog-changed'],template:'<button class="catalog-change-probe" @click="$emit(\'catalog-changed\')">change</button>'};const router=createRouter({history:createMemoryHistory(),routes:[{path:'/',component:blank},{path:'/repositories',component:blank},{path:'/repositories/:repositoryId',component:blank},{path:'/workspaces',component:blank},{path:'/workspaces/:id',component:blank},{path:'/workspaces/:workspaceId/repositories/:repositoryId',component:blank},{path:'/settings',component:blank},{path:'/connection',component:blank}]});
   await router.push('/');await router.isReady();wrapper=mount(ApplicationLayout,{global:{plugins:[router]}});await flushPromises();expect(wrapper.get('.breadcrumbs').text()).toContain('Mission Control');
+  useExplorerPreferences().collapsed = false; await flushPromises();
+  await wrapper.get('.sidebar-resize').trigger('keydown', { key: 'ArrowRight' });
+  expect(useExplorerPreferences().sidebarWidth).toBe(276);
   await wrapper.get('.catalog-change-probe').trigger('click'); await flushPromises();
   for(const [path,label]of[['/repositories','Todos os repositórios'],['/repositories/2','Repo'],['/repositories/999','Repositório'],['/workspaces','Gerenciar workspaces'],['/workspaces/1','Team'],['/workspaces/1/repositories/2','Repo'],['/workspaces/999','Workspaces'],['/settings','Configurações'],['/connection','Conexão']]){await router.push(path!);await flushPromises();expect(wrapper.get('.breadcrumbs').text()).toContain(label!);}
   const store=useExplorerStore();store.loading=true;await flushPromises();expect(wrapper.get('footer').text()).toContain('Consultando');store.loading=false;store.error='Offline';await flushPromises();expect(wrapper.get('footer').text()).toContain('Indisponível');

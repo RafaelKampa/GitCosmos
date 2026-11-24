@@ -77,7 +77,8 @@ describe('repository details', () => {
     vi.spyOn(RepositoryChangesApiService.prototype, 'getDiff').mockResolvedValue(patch);
     const page = render(); await flushPromises();
     const workbench = page.get('.repository-workbench');
-    expect(Array.from(workbench.element.children).map(child => child.className)).toEqual(['file-changes-list', 'file-diff-panel', 'repository-commit-panel']);
+    expect(workbench.get('.repository-commit-panel').element.previousElementSibling?.getAttribute('role')).toBe('separator');
+    expect(workbench.findAll(':scope > .resize-handle')).toHaveLength(2);
     expect(workbench.get('.repository-commit-panel').findAll('form')).toHaveLength(1);
     await select(page);
     expect(page.getComponent(DiffViewer).props('diff')).toEqual(patch.result);
@@ -86,6 +87,10 @@ describe('repository details', () => {
     expect(page.get('.repository-path').text()).toBe('C:/repo');
     expect(page.find('.repository-metrics').exists()).toBe(true);
     expect(page.find('.repository-tabs').exists()).toBe(true);
+    await page.get('.changes-width-resize').trigger('keydown', { key: 'ArrowRight' });
+    expect(workbench.attributes('style')).toContain('--changes-width: 32%');
+    await page.get('.changes-height-resize').trigger('keydown', { key: 'End' });
+    expect(workbench.attributes('style')).toContain('--changes-height: 2400px');
   });
 
   it('refreshes the active repository and history when a branch operation invalidates its state', async () => {

@@ -11,6 +11,8 @@ import DiffViewer from '../diff-viewer/DiffViewer.vue';
 import RepositoryHistory from '../repository-history/RepositoryHistory.vue';
 import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
 import RepositoryCommitForm from '../repository-commit-form/RepositoryCommitForm.vue';
+import ResizeHandle from '../../../shared/components/resize-handle/ResizeHandle.vue';
+import { usePanelLayout } from '../../../core/preferences/panel-layout.store';
 import type { MoveFilesRequest, RepositoryEditResult } from '../../../core/repositories/models/repository-edit.model';
 
 const props = defineProps<{ workspaceId: number; repositoryId: number }>();
@@ -20,6 +22,7 @@ const repository = ref<RepositoryChanges | null>(null);
 const selection = ref<DiffSelection | null>(null);
 const diff = ref<FileDiff | null>(null);
 const preferences = useExplorerPreferences();
+const layout = usePanelLayout();
 const tab = computed({ get: () => preferences.repositoryTabs[props.repositoryId] === 'history' ? 'history' : 'changes', set: (value: string) => { preferences.repositoryTabs[props.repositoryId] = value; } });
 const tabs = { changes: 'repositoryChangesTab', history: 'repositoryHistoryTab' } as const;
 const loading = ref(true); const diffLoading = ref(false);
@@ -100,8 +103,9 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
       <dl class="repository-metrics"><div class="metric-tile ahead"><dt>{{ i18n.t('gitChangedFiles') }}</dt><dd>{{ repository.status.changedFiles }}</dd></div><div class="metric-tile ahead"><dt>{{ i18n.t('aheadMetric') }}</dt><dd>{{ repository.status.ahead ?? '—' }}</dd></div><div class="metric-tile behind"><dt>{{ i18n.t('behindMetric') }}</dt><dd>{{ repository.status.behind ?? '—' }}</dd></div></dl>
       <nav class="repository-tabs" :aria-label="i18n.t('repositorySections')"><button v-for="(label, key) in tabs" :key="key" type="button" :disabled="editing" :aria-pressed="tab === key" @click="tab = key">{{ i18n.t(label) }}</button></nav>
       <RepositoryHistory v-if="tab === 'history'" :workspace-id="workspaceId" :repository-id="repositoryId" />
-      <div v-else class="repository-workbench">
+      <div v-else class="repository-workbench" :style="{ '--changes-width': layout.sizes.changesWidth + '%', '--changes-height': layout.sizes.changesHeight ? layout.sizes.changesHeight + 'px' : '100dvh' }">
         <FileChangesList :files="repository.files" :selected="selection" :disabled="editing" @select="select" @move="move" />
+        <ResizeHandle v-model="layout.sizes.changesWidth" class="changes-width-resize" axis="x" percent :min="20" :max="70" :label="i18n.t('resizeChangesWidth')" />
         <section class="file-diff-panel" :aria-busy="diffLoading" :aria-label="i18n.t('changesDiff')">
           <div v-if="selection" class="file-diff-heading">
             <h2>{{ selection.path }}</h2>
@@ -116,6 +120,7 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
           <p v-else-if="repository.files.length === 0" class="repository-clean" role="status">{{ i18n.t('changesClean') }}</p>
           <p v-else class="diff-feedback">{{ i18n.t('diffSelectFile') }}</p>
         </section>
+        <ResizeHandle v-model="layout.sizes.changesHeight" class="changes-height-resize" axis="y" :min="200" :max="2400" :label="i18n.t('resizeChangesHeight')" />
         <div class="repository-commit-panel">
           <RepositoryCommitForm ref="commitForm" :repository-id="repositoryId" :workspace-id="workspaceId" :files="repository.files" :has-commits="repository.status.hasCommits" @busy="operationBusy = $event" @changed="edited" />
         </div>
@@ -128,7 +133,8 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
 .repository-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-block: 1rem; }
 .repository-heading h1 { margin: .5rem 0; overflow-wrap: anywhere; font-size: clamp(1.5rem, 2vw, 2rem); line-height: 1.2; }
 .repository-path { color: var(--gc-text-muted); overflow-wrap: anywhere; }
-.repository-workbench { display: grid; grid-template-columns: minmax(12rem, 30%) minmax(0, 1fr); grid-template-rows: 100dvh auto; gap: .5rem; }
+.repository-workbench { display: grid; grid-template-columns: minmax(0, var(--changes-width)) 8px minmax(0, 1fr); grid-template-rows: var(--changes-height) 8px auto; }
+.changes-height-resize { grid-column: 1 / -1; }
 .repository-commit-panel { grid-column: 1 / -1; min-width: 0; border: 1px solid var(--gc-border); border-radius: .5rem; }
 .repository-commit-panel :deep(.repository-commit-form) { border-top: 0; }
 .file-diff-panel :deep(.diff-viewer) { flex: 1; min-height: 0; max-height: none; }
@@ -139,5 +145,5 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
 .file-diff-heading span { color: var(--gc-text-muted); font-size: .85rem; }
 .diff-feedback { padding: 1rem; }
 .repository-clean { padding: 1rem; color: var(--gc-success); background: var(--gc-success-bg); border-radius: .5rem; }
-@media (max-width: 800px) { .repository-workbench { grid-template-columns: minmax(0, 1fr); grid-template-rows: 100dvh 100dvh auto; } }
+@media (max-width: 800px) { .repository-workbench { grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--changes-height) var(--changes-height) 8px auto; } .changes-width-resize { display: none; } }
 </style>

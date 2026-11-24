@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../material-icon/MaterialIcon.vue';
 import { nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 
@@ -32,8 +33,8 @@ onUnmounted(() => { observer?.disconnect(); window.removeEventListener('resize',
 <template>
   <span class="horizontal-scroll">
     <span :id="id" ref="viewport" class="scroll-viewport" @scroll="measure"><span ref="content" class="scroll-content"><slot /></span></span>
-    <button v-if="left" type="button" class="scroll-arrow scroll-left" :aria-controls="id" :aria-label="i18n.t('historyScrollLeft')" :title="i18n.t('historyScrollLeft')" @click.stop="move(-1)">‹</button>
-    <button v-if="right" type="button" class="scroll-arrow scroll-right" :aria-controls="id" :aria-label="i18n.t('historyScrollRight')" :title="i18n.t('historyScrollRight')" @click.stop="move(1)">›</button>
+    <button v-if="left" type="button" class="scroll-arrow scroll-left" :aria-controls="id" :aria-label="i18n.t('historyScrollLeft')" :title="i18n.t('historyScrollLeft')" @click.stop="move(-1)"><MaterialIcon name="chevron_left" /></button>
+    <button v-if="right" type="button" class="scroll-arrow scroll-right" :aria-controls="id" :aria-label="i18n.t('historyScrollRight')" :title="i18n.t('historyScrollRight')" @click.stop="move(1)"><MaterialIcon name="chevron_right" /></button>
   </span>
 </template>
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../../../shared/components/material-icon/MaterialIcon.vue';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { CatalogRepository } from '../../../core/catalog/catalog.model';
@@ -33,7 +34,7 @@ function repositoryUrl(id: number) { return props.workspaceId ? '/workspaces/' +
         <option v-for="(label, state) in labels" :key="state" :value="state">{{ i18n.t(label) }}</option>
       </select>
       <select v-model="filters.sort" :aria-label="i18n.t('sortRepositories')"><option value="name">A → Z</option><option value="descending">Z → A</option></select>
-      <button type="button" class="icon-action" :aria-pressed="filters.favoritesOnly" :aria-label="i18n.t('favoritesOnly')" @click="filters.favoritesOnly = !filters.favoritesOnly">☆</button>
+      <button type="button" class="icon-action" :aria-pressed="filters.favoritesOnly" :aria-label="i18n.t('favoritesOnly')" @click="filters.favoritesOnly = !filters.favoritesOnly"><MaterialIcon name="star_border" /></button>
       <div class="view-toggle" role="group" :aria-label="i18n.t('repositoryView')">
         <button type="button" :aria-pressed="preferences.view === 'list'" @click="preferences.view = 'list'">☷ {{ i18n.t('listView') }}</button>
         <button type="button" :aria-pressed="preferences.view === 'cards'" @click="preferences.view = 'cards'">▦ {{ i18n.t('cardsView') }}</button>
@@ -53,7 +54,7 @@ function repositoryUrl(id: number) { return props.workspaceId ? '/workspaces/' +
         <span class="repository-branch">{{ repo.status ? (repo.status.isDetached ? i18n.t('gitDetached') : repo.status.branch) : '—' }}</span>
         <span class="repository-state" :class="repo.state" :title="repo.error ?? undefined">{{ i18n.t(labels[repo.state]) }}</span>
         <span class="repository-divergence" :title="i18n.t('localTracking')">↓ {{ repo.status?.behind ?? '—' }} · ↑ {{ repo.status?.ahead ?? '—' }}</span>
-        <button type="button" class="favorite-action" :aria-label="i18n.t('favoriteRepository') + ': ' + repo.name" :aria-pressed="preferences.favorites.includes(repo.id)" @click="preferences.toggleFavorite(repo.id)">{{ preferences.favorites.includes(repo.id) ? '★' : '☆' }}</button>
+        <button type="button" class="favorite-action" :aria-label="i18n.t('favoriteRepository') + ': ' + repo.name" :aria-pressed="preferences.favorites.includes(repo.id)" @click="preferences.toggleFavorite(repo.id)"><MaterialIcon :name="preferences.favorites.includes(repo.id) ? 'star' : 'star_border'" /></button>
         <p v-if="repo.error" class="repository-row-error" role="alert">{{ repo.error }}</p>
       </li>
     </ul>

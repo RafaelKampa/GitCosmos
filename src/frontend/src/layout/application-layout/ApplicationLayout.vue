@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router';
 import AppHeader from '../app-header/AppHeader.vue';
 import ExplorerSidebar from '../explorer-sidebar/ExplorerSidebar.vue';
 import OperationsDrawer from '../operations-drawer/OperationsDrawer.vue';
+import ResizeHandle from '../../shared/components/resize-handle/ResizeHandle.vue';
 import { useExplorerStore } from '../../core/catalog/explorer.store';
 import { useExplorerPreferences } from '../../core/preferences/explorer-preferences.store';
 import { useLanguageStore } from '../../core/i18n/language.store';
@@ -27,6 +28,7 @@ onUnmounted(explorer.cancel);
     <a class="skip-link" href="#app-content">{{ i18n.t('skipToContent') }}</a>
     <AppHeader />
 <ExplorerSidebar :active-repository-id="Number(route.params.repositoryId)" />
+    <ResizeHandle v-if="!preferences.collapsed" v-model="preferences.sidebarWidth" class="sidebar-resize" axis="x" :min="220" :max="380" :label="i18n.t('resizeSidebar')" />
     <main id="app-content" class="app-content" tabindex="-1">
       <nav class="breadcrumbs" :aria-label="i18n.t('breadcrumbs')">
 <RouterLink to="/">GitCosmos</RouterLink>

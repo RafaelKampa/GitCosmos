@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../../../shared/components/material-icon/MaterialIcon.vue';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import { useLanguageStore } from '../../../core/i18n/language.store';
@@ -62,7 +63,7 @@ onUnmounted(() => controller?.abort());
       <span v-if="amend" class="amend-warning">{{ i18n.t('editAmendWarning') }}</span>
       <div class="commit-split">
         <button class="commit-submit" type="submit" :disabled="blocked || !subject.trim() || stagedCount === 0 && !amend">{{ i18n.t(amend ? 'editAmend' : 'editCommit') }} {{ stagedCount }} {{ i18n.t('editFiles') }}</button>
-        <button class="commit-options-toggle" type="button" :disabled="blocked" :aria-expanded="options" :aria-label="i18n.t('editOptions')" @click="options = !options">⌄</button>
+        <button class="commit-options-toggle" type="button" :disabled="blocked" :aria-expanded="options" :aria-label="i18n.t('editOptions')" @click="options = !options"><MaterialIcon name="expand_more" /></button>
         <div v-if="options" class="commit-options"><button type="button" :disabled="!subject.trim() || stagedCount === 0 && !amend" @click="prepare(make('commit', [], true))">{{ i18n.t('editCommitPush') }}</button></div>
       </div>
     </div>

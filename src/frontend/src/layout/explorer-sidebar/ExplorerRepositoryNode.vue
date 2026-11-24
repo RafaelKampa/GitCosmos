@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../../shared/components/material-icon/MaterialIcon.vue';
 import { computed, ref, useId } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useLanguageStore } from '../../core/i18n/language.store';
@@ -9,18 +10,18 @@ const resourceOpen = ref<Record<string, boolean>>({});
 const i18n = useLanguageStore(); const preferences = useExplorerPreferences(); const id = useId();
 const expanded = computed(() => preferences.expandedRepositories[props.to] === true);
 const sections = [
-  { key: 'branches', label: 'repositoryBranchesTab', icon: '⑂' },
-  { key: 'remotes', label: 'repositoryRemotesTab', icon: '☁' },
-  { key: 'tags', label: 'repositoryTags', icon: '◇' },
-  { key: 'stashes', label: 'repositoryStashes', icon: '▣' },
-  { key: 'submodules', label: 'repositorySubmodules', icon: '▤' },
+  { key: 'branches', label: 'repositoryBranchesTab', icon: 'account_tree' },
+  { key: 'remotes', label: 'repositoryRemotesTab', icon: 'cloud' },
+  { key: 'tags', label: 'repositoryTags', icon: 'label' },
+  { key: 'stashes', label: 'repositoryStashes', icon: 'inventory_2' },
+  { key: 'submodules', label: 'repositorySubmodules', icon: 'extension' },
 ] as const;
 </script>
 
 <template>
   <li class="explorer-repository">
     <div class="repository-tree-heading" :class="{ 'explorer-active': active }">
-      <button type="button" class="tree-toggle repository-toggle" :aria-expanded="expanded" :aria-controls="id" :aria-label="i18n.t('toggleRepository') + ': ' + name" @click="preferences.expandedRepositories[to] = !expanded; resourceOpen = {}"><span aria-hidden="true">{{ expanded ? '▾' : '▸' }}</span></button>
+      <button type="button" class="tree-toggle repository-toggle" :aria-expanded="expanded" :aria-controls="id" :aria-label="i18n.t('toggleRepository') + ': ' + name" @click="preferences.expandedRepositories[to] = !expanded; resourceOpen = {}"><MaterialIcon :name="expanded ? 'expand_more' : 'chevron_right'" /></button>
       <RouterLink class="repository-tree-link" :to="to" :title="name" :aria-current="active ? 'page' : undefined">{{ name }}</RouterLink>
     </div>
     <ul v-if="expanded" :id="id" class="repository-tree-sections">
@@ -28,7 +29,7 @@ const sections = [
       <li><RouterLink class="repository-section-link" :to="to" @click="preferences.repositoryTabs[repositoryId] = 'history'">{{ i18n.t('repositoryHistoryTab') }}</RouterLink></li>
       <li v-for="section in sections" :key="section.key">
         <details class="repository-resource-group" @toggle="resourceOpen[section.key] = ($event.target as HTMLDetailsElement).open">
-          <summary><span class="resource-icon" aria-hidden="true">{{ section.icon }}</span>{{ i18n.t(section.label) }}</summary>
+          <summary><MaterialIcon class="resource-icon" :name="section.icon" />{{ i18n.t(section.label) }}</summary>
           <template v-if="section.key === 'branches' || section.key === 'remotes'"><RepositoryBranches v-if="resourceOpen[section.key]" :repository-id="repositoryId" :workspace-id="workspaceId" :remote-mode="section.key === 'remotes'" /></template>
           <p v-else class="repository-resource-notice">{{ i18n.t('repositoryResourcesUpcoming') }}</p>
         </details>

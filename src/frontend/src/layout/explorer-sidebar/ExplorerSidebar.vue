@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../../shared/components/material-icon/MaterialIcon.vue';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useExplorerStore } from '../../core/catalog/explorer.store';
@@ -16,12 +17,12 @@ function toggle(id: number) { closed.value = closed.value.includes(id) ? closed.
 <h2 class="explorer-heading">{{ i18n.t('explorer') }}</h2>
 <nav :aria-label="i18n.t('navigation')">
   <RouterLink to="/" class="explorer-root">
-<span aria-hidden="true">▦</span>{{ i18n.t('missionControl') }}</RouterLink>
+<MaterialIcon name="dashboard" />{{ i18n.t('missionControl') }}</RouterLink>
 <RouterLink to="/repositories" class="explorer-root">
-<span aria-hidden="true">▤</span>{{ i18n.t('allRepositories') }}</RouterLink>
+<MaterialIcon name="source" />{{ i18n.t('allRepositories') }}</RouterLink>
   <div class="explorer-section-label">
 <span>{{ i18n.t('workspaces') }}</span>
-<RouterLink to="/workspaces" :aria-label="i18n.t('manageWorkspaces')">＋</RouterLink>
+<RouterLink to="/workspaces" :aria-label="i18n.t('manageWorkspaces')"><MaterialIcon name="add" /></RouterLink>
 </div>
   <p v-if="explorer.loading" class="explorer-feedback">{{ i18n.t('explorerLoading') }}</p>
 <div v-if="explorer.error" class="explorer-feedback">
@@ -30,7 +31,7 @@ function toggle(id: number) { closed.value = closed.value.includes(id) ? closed.
 </div>
   <div v-for="workspace in explorer.index.workspaces" :key="workspace.id" class="explorer-workspace">
 <div class="explorer-workspace-heading">
-<button class="tree-toggle" type="button" :aria-label="i18n.t('toggleWorkspace') + ': ' + workspace.name" :aria-expanded="!closed.includes(workspace.id)" @click="toggle(workspace.id)">{{ closed.includes(workspace.id) ? '▸' : '▾' }}</button>
+<button class="tree-toggle" type="button" :aria-label="i18n.t('toggleWorkspace') + ': ' + workspace.name" :aria-expanded="!closed.includes(workspace.id)" @click="toggle(workspace.id)"><MaterialIcon :name="closed.includes(workspace.id) ? 'chevron_right' : 'expand_more'" /></button>
 <RouterLink :to="'/workspaces/' + workspace.id">{{ workspace.name }}</RouterLink>
 </div>
 <ul v-if="!closed.includes(workspace.id)">
@@ -44,7 +45,7 @@ function toggle(id: number) { closed.value = closed.value.includes(id) ? closed.
 </ul>
 <p v-if="!explorer.loading && !explorer.error && ungrouped.length === 0" class="explorer-feedback">{{ i18n.t('ungroupedEmpty') }}</p>
   <button type="button" class="explorer-root operations-toggle" :aria-expanded="preferences.operationsOpen" aria-controls="operations-drawer" @click="preferences.operationsOpen = !preferences.operationsOpen">
-<span aria-hidden="true">◷</span>{{ i18n.t('operations') }}</button>
+<MaterialIcon name="history" />{{ i18n.t('operations') }}</button>
 </nav>
 </aside>
 </template>

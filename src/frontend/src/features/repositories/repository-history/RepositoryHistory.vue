@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../../../shared/components/material-icon/MaterialIcon.vue';
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue';
 import { RepositoryHistoryApiService } from '../../../core/repositories/repository-history-api.service';
 import type { GitCommit, CommitDetails, CommitDiff } from '../../../core/repositories/models/repository-history.model';
@@ -13,11 +14,14 @@ import HorizontalScroll from '../../../shared/components/horizontal-scroll/Horiz
 import { foldMergeHistory } from './merge-folding';
 import FileStatusBadge from '../../../shared/components/file-status-badge/FileStatusBadge.vue';
 import HistoryFilters from './HistoryFilters.vue';
+import ResizeHandle from '../../../shared/components/resize-handle/ResizeHandle.vue';
+import { usePanelLayout } from '../../../core/preferences/panel-layout.store';
 import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
 
 const props = defineProps<{ workspaceId: number; repositoryId: number }>();
 const i18n = useLanguageStore();
 const preferences = useExplorerPreferences();
+const layout = usePanelLayout();
 const filters = ref(preferences.historyFilters[props.repositoryId] || { branch: '', search: '' });
 const historyList = ref<HTMLElement>(); const focusNotice = ref('');
 let pendingFocus = preferences.historyNavigation[props.repositoryId]?.sha || ''; let focusVersion = 0;
@@ -134,7 +138,7 @@ onUnmounted(() => { focusVersion++; listRequest?.abort(); clearSelection(); });
     <p v-if="loading" role="status">{{ i18n.t('historyLoading') }}</p>
     <p v-else-if="!error && commits.length === 0" role="status">{{ i18n.t(filters.branch || filters.search ? 'historyNoMatches' : 'historyEmpty') }}</p>
     <div class="history-workbench">
-      <section ref="historyList" class="history-list" :aria-label="i18n.t('historyCommits')" :style="{ '--history-graph-width': graphWidth + 'px' }">
+      <section ref="historyList" class="history-list" :aria-label="i18n.t('historyCommits')" :style="{ '--history-graph-width': graphWidth + 'px', height: layout.sizes.historyGraph ? layout.sizes.historyGraph + 'px' : undefined, maxHeight: layout.sizes.historyGraph ? 'none' : undefined }">
         <div class="history-columns" aria-hidden="true"><span /><span>{{ i18n.t('historySubject') }}</span><span>{{ i18n.t('historyAuthor') }}</span><span>{{ i18n.t('historyCommit') }}</span><span>{{ i18n.t('historyDate') }}</span></div>
         <div v-for="(commit, index) in folded.commits" :key="commit.sha" class="history-row" :data-sha="commit.sha" :class="{ selected: selected === commit.sha }" :style="{ height: graph[index]!.height + 'px' }">
           <span class="graph-cell">
@@ -156,7 +160,8 @@ onUnmounted(() => { focusVersion++; listRequest?.abort(); clearSelection(); });
         <button v-if="hasMore" class="history-more" type="button" :disabled="loading" @click="load(false)">{{ i18n.t('historyMore') }}</button>
         <button v-else-if="error" class="history-retry" type="button" :disabled="loading" @click="load(false)">{{ i18n.t('diffRetry') }}</button>
       </section>
-      <section class="commit-details" :aria-label="i18n.t('historyDetails')" :aria-busy="detailsLoading || diffLoading">
+      <ResizeHandle v-model="layout.sizes.historyGraph" axis="y" :min="120" :max="2000" :label="i18n.t('resizeHistoryGraph')" />
+      <section class="commit-details" :aria-label="i18n.t('historyDetails')" :aria-busy="detailsLoading || diffLoading" :style="{ height: layout.sizes.historyDetails ? layout.sizes.historyDetails + 'px' : undefined }">
         <p v-if="detailsLoading" role="status">{{ i18n.t('historyLoading') }}</p>
         <div v-else-if="detailsError"><p role="alert">{{ detailsError }}</p><button class="commit-retry" type="button" @click="selectCommit(selected)">{{ i18n.t('diffRetry') }}</button></div>
         <template v-else-if="details">
@@ -169,7 +174,7 @@ onUnmounted(() => { focusVersion++; listRequest?.abort(); clearSelection(); });
           <p v-if="details.files.length === 0">{{ i18n.t('historyNoFiles') }}</p>
           <ul class="commit-files"><li v-for="(file, index) in details.files" :key="file.path">
             <button :id="accordionId + '-file-' + index" class="commit-file-toggle" type="button" :aria-expanded="selectedFile === file.path" :aria-controls="accordionId + '-diff-' + index" @click="toggleFile(file.path)">
-              <span class="file-chevron" aria-hidden="true">{{ selectedFile === file.path ? '⌄' : '›' }}</span><FileStatusBadge :status="file.status" /> <span v-if="file.originalPath">{{ file.originalPath }} → </span>{{ file.path }}
+              <MaterialIcon class="file-chevron" :name="selectedFile === file.path ? 'expand_more' : 'chevron_right'" /><FileStatusBadge :status="file.status" /> <span v-if="file.originalPath">{{ file.originalPath }} → </span>{{ file.path }}
             </button>
             <section v-if="selectedFile === file.path" :id="accordionId + '-diff-' + index" class="commit-file-diff" role="region" :aria-labelledby="accordionId + '-file-' + index" :aria-busy="diffLoading">
               <p v-if="diffLoading" role="status">{{ i18n.t('diffLoading') }}</p>
@@ -180,6 +185,7 @@ onUnmounted(() => { focusVersion++; listRequest?.abort(); clearSelection(); });
         </template>
         <p v-else>{{ i18n.t('historySelect') }}</p>
       </section>
+      <ResizeHandle v-model="layout.sizes.historyDetails" axis="y" :min="160" :max="2400" :label="i18n.t('resizeHistoryDetails')" />
     </div>
   </section>
 </template>
@@ -188,7 +194,7 @@ onUnmounted(() => { focusVersion++; listRequest?.abort(); clearSelection(); });
 .history-toolbar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; margin-block: .75rem; }
 button { color: var(--gc-text); background: var(--gc-surface); border: 1px solid var(--gc-border); border-radius: .4rem; padding: .5rem .75rem; }
 .history-toolbar p, .commit-comparison { color: var(--gc-text-muted); }
-.history-workbench { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.history-workbench { display: grid; grid-template-columns: minmax(0, 1fr); }
 .history-list, .commit-details { min-width: 0; border: 1px solid var(--gc-border); border-radius: .5rem; background: var(--gc-surface); overflow: auto; }
 .history-list { max-height: 36vh; }
 .history-columns, .history-row { min-width: calc(var(--history-graph-width) + 51rem); }

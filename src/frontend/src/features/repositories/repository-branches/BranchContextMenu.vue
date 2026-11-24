@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../../../shared/components/material-icon/MaterialIcon.vue';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import type { BranchItem, BranchOperation } from '../../../core/repositories/models/repository-branch.model';
 import { useLanguageStore } from '../../../core/i18n/language.store';
@@ -44,7 +45,7 @@ onMounted(() => document.addEventListener('pointerdown', outside));
 onUnmounted(() => document.removeEventListener('pointerdown', outside));
 </script>
 <template>
-  <button ref="trigger" class="branch-options" type="button" :disabled="props.disabled" :aria-label="i18n.t('branchOptions') + ': ' + branch.name" aria-haspopup="menu" :aria-expanded="opened" @click.stop="toggle">⋯</button>
+  <button ref="trigger" class="branch-options" type="button" :disabled="props.disabled" :aria-label="i18n.t('branchOptions') + ': ' + branch.name" aria-haspopup="menu" :aria-expanded="opened" @click.stop="toggle"><MaterialIcon name="more_horiz" /></button>
   <Teleport to="body"><div v-if="opened" ref="menu" class="branch-context-menu" role="menu" :aria-label="i18n.t('branchOptions') + ': ' + branch.name" :style="position" @keydown="keydown">
     <button v-for="operation in entries" :key="operation" type="button" role="menuitem" :data-operation="operation" :disabled="unavailable(operation)" @click="select(operation)">{{ label(operation) }}</button>
   </div></Teleport>

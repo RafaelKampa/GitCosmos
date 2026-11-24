@@ -217,7 +217,7 @@ As rotas e APIs existentes de workspace continuam disponíveis. Não há nova mi
 
 ### Alterações locais, Stage e commit
 
-A seção **Alterações locais** apresenta duas árvores à esquerda: **Unstaged** acima e **Staged** abaixo, com pastas recolhíveis, ícones e indicadores `M` amarelo, `+` verde para adicionados (inclusive arquivos novos ainda não rastreados) e `−` vermelho para removidos. O diff fica à direita. O formulário com mensagem, descrição, checkbox **Amend** e botão com a quantidade de arquivos preparados ocupa toda a largura abaixo das duas colunas. Os painéis de árvores e diff têm a altura de uma janela inteira (100dvh), ajustada automaticamente ao redimensionar. A página mantém sua rolagem para acessar títulos, caminho, indicadores, botões de navegação e o formulário de commit abaixo dos painéis. As árvores e o diff também têm rolagem interna; em janelas estreitas, os painéis são empilhados, cada um com a altura da janela. Sem seleção no grupo, Stage/Unstage atua nos arquivos elegíveis desse grupo; com um arquivo selecionado, atua somente nele. Operações mutáveis ficam bloqueadas enquanto há outra operação em andamento nesta tela.
+A seção **Alterações locais** apresenta duas árvores à esquerda: **Unstaged** acima e **Staged** abaixo, com pastas recolhíveis, ícones e indicadores `M` amarelo, `+` verde para adicionados (inclusive arquivos novos ainda não rastreados) e `−` vermelho para removidos. O diff fica à direita. O formulário com mensagem, descrição, checkbox **Amend** e botão com a quantidade de arquivos preparados ocupa toda a largura abaixo das duas colunas. Por padrão, os painéis de árvores e diff têm a altura de uma janela inteira (100dvh), ajustada automaticamente ao redimensionar. A página mantém sua rolagem para acessar títulos, caminho, indicadores, botões de navegação e o formulário de commit abaixo dos painéis. As árvores e o diff também têm rolagem interna; em janelas estreitas, os painéis são empilhados, cada um com a altura da janela. Sem seleção no grupo, Stage/Unstage atua nos arquivos elegíveis desse grupo; com um arquivo selecionado, atua somente nele. Operações mutáveis ficam bloqueadas enquanto há outra operação em andamento nesta tela.
 
 Stage adiciona apenas os caminhos revisados ao índice; Unstage retira do índice e preserva os arquivos locais, inclusive antes do primeiro commit. Os caminhos são literais, limitados e validados na raiz persistida; metadados `.git`, escapes, links/junctions, submódulos, conflitos e operações Git em andamento são rejeitados neste fluxo inicial. Stage captura a versão atual do arquivo quando acionado. O rascunho de mensagem/descrição é preservado após Stage/Unstage e após falhas ou cancelamento da revisão.
 
@@ -279,6 +279,12 @@ O Vue é executado no navegador. O Node.js é necessário para desenvolver e com
 
 **O comando `dotnet run` não recompila o frontend automaticamente.** A porta `5210` apresenta a última versão copiada para `wwwroot`. Para atualizar essa versão após alterar o Vue, interrompa a aplicação, execute novamente `Build.ps1` e inicie a API. Para desenvolvimento contínuo, utilize os dois terminais e a porta `5173`.
 
+## Redimensionamento dos painéis
+
+Nomes de branches locais e remotas ficam em uma única linha com reticências quando o sidebar é estreito. Ao passar o mouse sobre a branch, o tooltip mostra o nome completo seguido do hash completo do commit na ponta da branch.
+
+Arraste as divisórias para ajustar a largura do Explorer, a divisão entre árvore de arquivos e diff, a divisão entre Unstaged/Staged e as alturas dos painéis de alterações, grafo e detalhes de commit. As divisórias podem receber foco com Tab: use as setas para ajustar e Home/End para os limites. Os tamanhos ficam salvos no navegador. A página mantém títulos, indicadores, botões e rolagem; os cards de contadores não são redimensionados. Em telas estreitas, a divisão lateral fica oculta e os painéis de alterações são empilhados.
+
 ## Testes e cobertura
 
 Execute manualmente, na raiz, após restaurar as dependências:
@@ -295,6 +301,8 @@ Por preferência do responsável, agentes devem fornecer esses comandos para exe
 O frontend usa o pool `threads` do Vitest com um único worker, sem paralelismo entre arquivos e com isolamento por arquivo. Essa configuração evita depender da inicialização de um processo Node separado para cada arquivo no Windows. Se um worker não iniciar, a execução está incompleta: os percentuais de cobertura dessa rodada não representam a suíte inteira.
 
 ## Organização
+
+Os ícones da interface usam [Material Icons do Google](https://developers.google.com/fonts/docs/material_icons), com fonte hospedada no próprio aplicativo para funcionar offline. O componente compartilhado `MaterialIcon` fica em `src/frontend/src/shared/components/material-icon`; a fonte e sua licença Apache 2.0 ficam em `src/frontend/src/shared/assets/fonts/material-icons`. Os ícones decorativos herdam as cores do tema e os controles preservam seus rótulos acessíveis traduzidos.
 
 - `src/backend`: API, Application, Domain e Infrastructure.
 - `src/frontend/src`: app, core, features, layout e shared.

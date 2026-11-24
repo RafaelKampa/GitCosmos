@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../../../shared/components/material-icon/MaterialIcon.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useLanguageStore } from '../../../core/i18n/language.store';
@@ -85,9 +86,9 @@ onUnmounted(() => { readController?.abort(); resourceController?.abort(); });
       <p v-if="snapshot?.isDetached">{{ i18n.t('gitDetached') }}</p>
       <div v-for="group in groups" :key="group" class="remote-branch-group"><h4 v-if="group">{{ group }}</h4><ul class="local-branch-list">
         <li v-for="branch in visible.filter(item => !remoteMode || item.remote === group)" :key="branch.name">
-          <div class="branch-row"><button class="branch-select" :class="{ current: branch.isCurrent }" :title="branch.sha" :disabled="busy" :aria-pressed="selected === branch.name" @click="openHistory(branch)"><span aria-hidden="true">{{ branch.isCurrent ? '✓' : '⑂' }}</span> {{ branch.isRemote ? branch.sourceBranch : branch.name }}<span v-if="branch.isCurrent" class="branch-meta">({{ i18n.t('branchCurrent') }})</span></button>
+          <div class="branch-row"><button class="branch-select" :class="{ current: branch.isCurrent }" :title="branch.name + '\n' + branch.sha" :disabled="busy" :aria-pressed="selected === branch.name" @click="openHistory(branch)"><MaterialIcon :name="branch.isCurrent ? 'check' : 'account_tree'" /><span class="branch-name">{{ branch.isRemote ? branch.sourceBranch : branch.name }}</span><span v-if="branch.isCurrent" class="branch-meta">({{ i18n.t('branchCurrent') }})</span></button>
           <BranchContextMenu :branch="branch" :current-branch="currentBranch" :disabled="busy" @open="loadResources" @select="choose(branch, $event)" /></div>
-          <small v-if="branch.upstream" class="branch-meta">↳ {{ branch.upstream.replace(/^refs\/remotes\//, '') }}</small><small v-if="branch.isCheckedOut && !branch.isCurrent" class="branch-meta">{{ i18n.t('branchOtherWorktree') }}</small>
+          <small v-if="branch.upstream" class="branch-meta" :title="branch.upstream"><MaterialIcon name="subdirectory_arrow_right" /> {{ branch.upstream.replace(/^refs\/remotes\//, '') }}</small><small v-if="branch.isCheckedOut && !branch.isCurrent" class="branch-meta">{{ i18n.t('branchOtherWorktree') }}</small>
         </li>
       </ul></div>
       <p v-if="!visible.length">{{ i18n.t('branchNoResults') }}</p>
@@ -102,10 +103,12 @@ onUnmounted(() => { readController?.abort(); resourceController?.abort(); });
 .local-branch-list li { margin-bottom: .3rem; }
 .branch-row { display: flex; min-width: 0; align-items: center; }
 button { background: var(--gc-surface); color: var(--gc-text); border: 1px solid var(--gc-border); border-radius: .3rem; padding: .3rem .4rem; text-align: left; }
-.branch-select { flex: 1; min-width: 0; border-color: transparent; background: transparent; overflow-wrap: anywhere; }
+.branch-select { flex: 1; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: .3rem; border-color: transparent; background: transparent; }
+.branch-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.branch-select > .branch-meta { grid-column: 2; padding-left: 0; }
 .branch-select[aria-pressed='true'] { background: var(--gc-selection-bg); border-color: var(--gc-violet); }
 .current { font-weight: 650; }
-.branch-meta { display: block; padding-left: .5rem; color: var(--gc-text-muted); }
+.branch-meta { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: .5rem; color: var(--gc-text-muted); }
 .branch-search { display: grid; gap: .3rem; margin-block: .5rem; }
 .branch-search input { width: 100%; padding: .35rem; }
 .branch-toolbar, .branch-recovery { display: flex; flex-wrap: wrap; gap: .3rem; }

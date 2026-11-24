@@ -21,7 +21,9 @@ it('expands without navigating, offers resource groups and preserves contextual 
   expect(router.currentRoute.value.path).toBe('/');
   expect(view.get('.repository-toggle').attributes('aria-expanded')).toBe('true');
   expect(view.get('.repository-toggle').attributes('aria-controls')).toBe(view.get('.repository-tree-sections').attributes('id'));
-  expect(view.findAll('summary').map(item => item.text())).toEqual(['⑂Branches', '☁Remotes', '◇Tags', '▣Stashes', '▤Submódulos']);
+  expect(view.findAll('summary').map(item => item.text())).toEqual(['Branches', 'Remotes', 'Tags', 'Stashes', 'Submódulos']);
+  expect(view.findAll('summary .material-icon').map(icon => icon.attributes('data-icon'))).toEqual(['account_tree', 'cloud', 'label', 'inventory_2', 'extension']);
+  expect(view.get('.repository-toggle .material-icon').attributes('data-icon')).toBe('expand_more');
   expect(view.findAll('details')).toHaveLength(5);
   expect(view.findComponent(RepositoryBranches).exists()).toBe(false);
   const group = view.get('details'); (group.element as HTMLDetailsElement).open = true; await group.trigger('toggle');

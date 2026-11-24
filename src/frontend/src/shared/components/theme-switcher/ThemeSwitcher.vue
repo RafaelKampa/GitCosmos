@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MaterialIcon from '../material-icon/MaterialIcon.vue';
 import { useThemeStore } from '../../../core/theme/theme.store';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 
@@ -15,7 +16,7 @@ const i18n = useLanguageStore();
     :title="i18n.t(theme.isDark ? 'switchToLight' : 'switchToDark')"
     @click="theme.toggle"
   >
-    <span aria-hidden="true">{{ theme.isDark ? '☾' : '☀' }}</span>
+    <MaterialIcon :name="theme.isDark ? 'dark_mode' : 'light_mode'" />
     <span>{{ i18n.t(theme.isDark ? 'darkTheme' : 'lightTheme') }}</span>
   </button>
 </template>
