@@ -34,6 +34,15 @@
   --gc-brand-on-dark: #FB923C;
   --gc-violet: #8B5CF6;
   --gc-cyan: #22D3EE;
+  /* History lanes use the approved palette; identifiers remain stable per line. */
+  --gc-graph-1: var(--gc-primary);
+  --gc-graph-2: var(--gc-warning);
+  --gc-graph-3: var(--gc-success);
+  --gc-graph-4: var(--gc-danger);
+  --gc-graph-5: var(--gc-cyan);
+  --gc-graph-6: var(--gc-violet);
+  --gc-graph-7: var(--gc-brand-on-dark);
+  --gc-graph-8: var(--gc-running);
 
   --gc-success: #34D399;
   --gc-warning: #FBBF24;

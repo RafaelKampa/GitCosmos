@@ -18,3 +18,13 @@ it('supports empty patches, CRLF, multiple hunks and untracked additions without
     { type: 'addition', text: '+line', oldLine: null, newLine: 2 },
   ]);
 });
+
+it('preserves code that resembles header markers inside hunks and in untracked previews', () => {
+  const patch = 'diff --git a/a b/a\n--- a/a\n+++ b/a\n@@ -1 +1 @@\n--- removed\n+++ added\ndiff --git a/b b/b\n--- a/b\n+++ b/b\n@@ -8 +9 @@\n context';
+  const lines = parseUnifiedDiff(patch);
+  expect(lines[4]).toMatchObject({ type: 'deletion', text: '--- removed', oldLine: 1 });
+  expect(lines[5]).toMatchObject({ type: 'addition', text: '+++ added', newLine: 1 });
+  expect(lines[7]!.type).toBe('meta'); expect(lines[8]!.type).toBe('meta');
+  expect(lines[10]).toMatchObject({ type: 'context', oldLine: 8, newLine: 9 });
+  expect(parseUnifiedDiff('+++ actual file code')[0]).toMatchObject({ type: 'addition', text: '+++ actual file code', newLine: 1 });
+});

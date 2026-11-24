@@ -36,6 +36,8 @@ public class GitProcessRunner(string executable, TimeSpan timeout) : IGitProcess
             process.StartInfo.Environment.Remove(variable);
         process.StartInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";
         process.StartInfo.Environment["GIT_OPTIONAL_LOCKS"] = "0";
+        // Read-only inspection must not fetch missing objects in partial clones.
+        process.StartInfo.Environment["GIT_NO_LAZY_FETCH"] = "1";
         try
         {
             process.Start();

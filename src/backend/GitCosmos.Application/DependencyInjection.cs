@@ -15,5 +15,7 @@ public static class DependencyInjection
             .AddScoped<IRepositoryImportService, RepositoryImportService>()
             .AddScoped<IWorkspaceDashboardService, WorkspaceDashboardService>()
             .AddScoped<IRepositoryChangesService, RepositoryChangesService>()
+            .AddScoped<IRepositoryHistoryService, RepositoryHistoryService>()
+            .AddScoped<IRepositoryEditService, RepositoryEditService>()
             .AddScoped<IRepositoryCatalogService, RepositoryCatalogService>();
 }

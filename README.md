@@ -2,7 +2,7 @@
 
 Um cliente Git local para gerenciar repositórios independentes em um workspace unificado.
 
-As Milestones 1 e 2, incluindo seleção nativa, clonagem e adição automática de repositórios, foram validadas pelos testes manuais do usuário. A Milestone 3 está em andamento. A interface utiliza Cosmic Explorer e Mission Control, com navegação persistente, catálogo global e tela individual de alterações/diffs. Os testes e a cobertura do incremento atual aguardam execução manual.
+As Milestones 1 e 2, incluindo seleção nativa, clonagem e adição automática de repositórios, foram validadas pelos testes manuais do usuário. A Milestone 3 está em andamento. A interface utiliza Cosmic Explorer e Mission Control, com navegação persistente, catálogo global, alterações/diffs e histórico individual com grafo de commits. O incremento de histórico foi validado por testes manuais: backend com 276 testes aprovados, 98,90% de linhas e 97,87% de branches; frontend com 210 testes aprovados, 100% de linhas e 99,86% de branches. Pesquisa no histórico, histórico de arquivos e blame continuam planejados.
 
 ## Requisitos
 
@@ -141,7 +141,7 @@ Clique em **Atualizar estado** para consultar novamente após alterações exter
 
 Endpoint no Scalar: `GET /api/WorkspaceDashboard/GetDashboard?workspaceId=1`, retornando `CustomResponse<WorkspaceDashboardResponse>` com identificação do workspace, instante de conclusão da leitura (`checkedAt`) e resultados por repositório. IDs inválidos retornam 400 e workspaces inexistentes/inativos retornam 404. Sem nova migration ou dependência.
 
-Os testes preparados cobrem parsing, Git real em diretórios temporários (incluindo preservação do índice), disponibilidade parcial, validações, cancelamento, contratos HTTP, componentes e navegação. Execute-os manualmente com o script indicado abaixo. Para validar visualmente, abra um workspace com repositórios limpos, alterados e um caminho indisponível; confira branch, contagens, atualização e os dois temas. A visualização individual de alterações locais está descrita abaixo; histórico de commits e suas diferenças permanecem como próximos incrementos da Milestone 3.
+Os testes preparados cobrem parsing, Git real em diretórios temporários (incluindo preservação do índice nas consultas), disponibilidade parcial, validações, cancelamento, contratos HTTP, componentes e navegação. Execute-os manualmente com o script indicado abaixo. Para validar visualmente, abra um workspace com repositórios limpos, alterados e um caminho indisponível; confira branch, contagens, atualização e os dois temas. A visualização individual de alterações locais está descrita abaixo; o histórico de commits e suas diferenças estão descritos na seção Histórico de commits.
 
 ## Abrir repositório e visualizar diferenças locais
 
@@ -160,7 +160,7 @@ Endpoints documentados no Scalar, ambos com envelope `CustomResponse`:
 - `GET /api/RepositoryChanges/GetChanges?workspaceId=1&repositoryId=2`: identificação, branch/contagens e arquivos com os estados de índice e working tree.
 - `GET /api/RepositoryChanges/GetDiff?workspaceId=1&repositoryId=2&path=src%2Fexample.txt&area=working`: comparação de um arquivo selecionado; `area` aceita `working` ou `staged`. O frontend codifica o caminho em parâmetros de consulta.
 
-Validação manual sugerida: escolha um arquivo modificado, prepare parte das alterações por uma ferramenta externa e edite novamente. Compare os dois grupos, confira um arquivo novo, um binário e uma renomeação; troque rapidamente de arquivo e teste atualização e os dois temas. Os testes unitários preparados usam apenas fixtures temporárias locais, sem rede; sua execução continua manual. Histórico/grafo, operações de staging/commit e comparação lado a lado continuam pendentes.
+Validação manual sugerida: escolha um arquivo modificado, prepare parte das alterações por uma ferramenta externa e edite novamente. Compare os dois grupos, confira um arquivo novo, um binário e uma renomeação; troque rapidamente de arquivo e teste atualização e os dois temas. Os testes unitários preparados usam apenas fixtures temporárias locais, sem serviços externos; sua execução continua manual. O histórico/grafo e o fluxo de Stage/Unstage/Commit foram acrescentados nos incrementos seguintes. Staging por trechos e comparação lado a lado continuam pendentes.
 
 ## Cosmic Explorer e Mission Control
 
@@ -172,7 +172,7 @@ Nome/link navega; checkbox seleciona para um contexto independente. **Selecionar
 
 **Adicionar repositório** no catálogo permite selecionar uma raiz Git ou um contêiner para detecção automática dos filhos imediatos, sem criar um workspace implícito. **Clonar repositório** também funciona sem workspace, preservando revisão/confirmação do destino e autenticação Git existente. Um cadastro por caminho canônico é reutilizado em todos os contextos. Remover um vínculo ou excluir workspace mantém o registro global e os arquivos; sem vínculos ativos, ele aparece em Sem workspace. A rota `/repositories/{id}` abre os diffs diretamente, sem depender de workspace.
 
-O detalhe do repositório tem cabeçalho compacto, indicadores de arquivos/ahead/behind e seções Alterações, Histórico, Branches e Remotes. Alterações usa a leitura/diff real já implementada. As demais seções, Commit e ações Fetch/Pull/Push ficam claramente indisponíveis até suas implementações. O painel inferior **Operações** é recolhível e independente da rota; nesta etapa apresenta estado vazio de operações em lote. Não há dados demonstrativos, progresso fictício ou integração SignalR de operações ainda inexistentes.
+O detalhe do repositório tem cabeçalho compacto, indicadores de arquivos/ahead/behind e seções Alterações, Histórico, Branches e Remotes. Alterações e Histórico usam consultas reais. Stage, Unstage, Commit, Amend e Commit and Push possuem o fluxo individual descrito abaixo. Branches, Remotes e ações independentes Fetch/Pull/Push ficam indisponíveis até suas implementações. O painel inferior **Operações** é recolhível e independente da rota; nesta etapa apresenta estado vazio de operações em lote. Não há dados demonstrativos, progresso fictício ou integração SignalR de operações ainda inexistentes.
 
 Novos endpoints do catálogo, todos documentados no Scalar com `CustomResponse`:
 
@@ -183,6 +183,42 @@ Novos endpoints do catálogo, todos documentados no Scalar com `CustomResponse`:
 - `GET /api/RepositoryCatalog/GetChanges?repositoryId=1` e `/GetDiff?repositoryId=1&path=src%2Ffile.txt&area=working`: acesso ao registro global, com as mesmas proteções do diff.
 
 As rotas e APIs existentes de workspace continuam disponíveis. Não há nova migration ou dependência. A validação visual considerou desktop, ambos os temas e largura de 390 px, usando dados locais reais. Execute manualmente a suíte completa para verificar testes e cobertura deste incremento.
+
+### Alterações locais, Stage e commit
+
+A aba **Alterações** apresenta duas árvores à esquerda: **Unstaged** acima e **Staged** abaixo, com pastas recolhíveis, ícones e indicadores `M` amarelo, `+` verde para adicionados (inclusive arquivos novos ainda não rastreados) e `−` vermelho para removidos. O diff fica à direita; abaixo dele ficam mensagem, descrição, checkbox **Amend** e o botão com a quantidade de arquivos preparados. Sem seleção no grupo, Stage/Unstage atua nos arquivos elegíveis desse grupo; com um arquivo selecionado, atua somente nele. Operações mutáveis ficam bloqueadas enquanto há outra operação em andamento nesta tela.
+
+Stage adiciona apenas os caminhos revisados ao índice; Unstage retira do índice e preserva os arquivos locais, inclusive antes do primeiro commit. Os caminhos são literais, limitados e validados na raiz persistida; metadados `.git`, escapes, links/junctions, submódulos, conflitos e operações Git em andamento são rejeitados neste fluxo inicial. Stage captura a versão atual do arquivo quando acionado. O rascunho de mensagem/descrição é preservado após Stage/Unstage e após falhas ou cancelamento da revisão.
+
+Commit abre uma revisão com mensagem, descrição e arquivos preparados. Confirmar cria o commit somente com o índice; alterações não preparadas não entram. Amend substitui o último commit e muda seu SHA, com aviso adicional quando há referência remota local conhecida que o contém. Amend sem arquivos novos no índice permite alterar apenas a mensagem. É necessário estar em uma branch ativa, com identidade Git configurada; hooks e assinatura configurados no computador são respeitados. Mensagem tem até 200 caracteres e descrição até 10 mil.
+
+A seta do botão abre **Commit and Push**. Essa opção exige upstream configurado e um único destino de push, exibido na revisão; não cria configuração de upstream automaticamente. Após criar o commit, envia aquele SHA para a branch de destino explicitamente identificada, sem force, mirror, envio automático de tags ou push de submódulos. Não há fetch implícito. Credenciais continuam no Git Credential Manager/SSH já configurados. Se o envio falhar, for cancelado ou o destino mudar durante o commit, o commit local permanece: a resposta informa o SHA e o aviso de envio não confirmado. Atualize o estado e envie esse commit existente pela ferramenta Git; repetir um commit não é uma tentativa de push.
+
+Endpoints POST `/api/RepositoryEdit/Prepare` e `/api/RepositoryEdit/Execute` seguem `CustomResponse`/Scalar e os três idiomas. Prepare valida o repositório e devolve um token do estado (HEAD, branch, status, índice, opções e destino); Execute revalida antes de escrever. Operações são serializadas por diretório Git comum, inclusive entre workspaces/worktrees, com um conjunto limitado de locks. A proteção é otimista em relação a ferramentas Git externas: evite modificar simultaneamente o índice por outro programa durante a execução. Falha ou cancelamento não desfaz comandos já concluídos; atualize e revise antes de repetir. Não há reset destrutivo, limpeza da árvore de trabalho ou rollback automático. Comandos mutáveis têm timeout de dois minutos e captura limitada; a interface não aplica o timeout HTTP curto às execuções.
+
+Este incremento foi antecipado do fluxo individual da Milestone 4 por solicitação do usuário. Os testes novos foram preparados, incluindo push para um bare local temporário e falha de envio sem serviços externos; builds podem ser verificados pelo agente, mas testes/cobertura aguardam execução manual. Não há nova migration ou dependência. Pesquisa/histórico de arquivos/blame da Milestone 3 e staging por trechos continuam planejados.
+
+### Histórico de commits
+
+Na tela individual de um repositório, abra **Histórico**. A aba apresenta grafo e lista paginada de commits das referências locais, com linhas compactas e colunas para mensagem, autor com avatar, SHA e data/horário no idioma escolhido. Branches, tags e referências remotas aparecem em pills com ícones e nome curto; o nome completo fica disponível ao passar o mouse, e a branch atual recebe uma marca. O card do grafo fica acima dos detalhes, ambos com largura total. A altura máxima do grafo é 36vh no desktop e 22,5vh nas telas menores, metade da anterior, com rolagem interna. As linhas do grafo continuam entre páginas; pais ainda não carregados permanecem como linhas de continuação. Nenhum fetch é iniciado ao navegar. O histórico disponível em clones rasos segue os objetos presentes no computador.
+
+As referências aparecem em uma linha abaixo da mensagem, somente quando presentes. Mensagens ou conjuntos de pills maiores que a coluna oferecem setas para rolar lateralmente, com movimento suave e respeito à preferência por movimento reduzido. As setas não selecionam o commit. Cada linha do grafo usa uma cor dos tokens globais da paleta Cosmic, com cores preservadas ao recolher/expandir; os nós são círculos sem escala desigual. Merges possuem círculos maiores com seta para baixo (expandido) ou direita (recolhido).
+
+Clique no círculo de um merge para ocultar ou mostrar os commits alcançáveis pelos pais secundários que não pertencem à ancestralidade do primeiro pai. A ação altera somente a visualização das páginas já carregadas; carregar mais mantém os recolhimentos e aplica-os aos novos commits. Merges aninhados preservam seu estado até atualizar o histórico ou trocar de contexto. Se o commit selecionado for ocultado, os detalhes passam para o merge. Nenhuma operação de merge Git é executada por esses controles.
+
+As fotos usam [Gravatar](https://docs.gravatar.com/sdk/images/) pelo SHA-256 do e-mail normalizado do autor, com carregamento lazy via HTTPS e sem enviar referrer. Quando não há imagem disponível, e-mail ou conexão, aparecem iniciais locais. A consulta de avatares depende desse serviço externo; a navegação e os dados Git continuam locais.
+
+Selecione um commit para consultar sua mensagem completa, autor/e-mail, pais e arquivos alterados. Clique no nome de um arquivo para visualizar seu diff unificado em um acordeão imediatamente abaixo dele; clicar novamente fecha. Somente um arquivo pode ficar expandido por vez. Fechar ou trocar de arquivo cancela consultas pendentes e descarta respostas atrasadas; o botão de retry mantém o acordeão aberto. A comparação usa o primeiro pai do commit, inclusive em merges; commits iniciais são comparados com a árvore vazia. Renomeações preservam o caminho original; binários e diferenças acima do limite recebem aviso. Conteúdo de commits é tratado como texto, sem executar HTML, filtros externos ou leitura de arquivos da árvore de trabalho.
+
+O visualizador mostra somente as linhas de código do diff, com suas cores e numeração: cabeçalhos Git (`diff --git`, `index`, `---`, `+++`) e cabeçalhos de blocos (`@@`) ficam ocultos. Linhas de código que começam com esses caracteres são preservadas. Mudanças somente de metadados exibem a indicação de ausência de diferenças textuais. Os indicadores de arquivo são compartilhados entre histórico e alterações locais: `M` amarelo para modificado, `+` verde para adicionado e `−` vermelho para removido, com descrição traduzida ao passar o mouse.
+
+Endpoints de consulta, com `CustomResponse`, validação e documentação no Scalar:
+
+- `GET /api/RepositoryHistory/GetHistory?repositoryId=1&workspaceId=0&page=0&pageSize=50`.
+- `GET /api/RepositoryHistory/GetCommit?repositoryId=1&workspaceId=0&sha=<SHA completo>`.
+- `GET /api/RepositoryHistory/GetDiff?repositoryId=1&workspaceId=0&sha=<SHA completo>&path=<caminho codificado>`.
+
+`workspaceId=0` consulta o catálogo global; um workspace informado deve estar ativo e conter o vínculo. A primeira página devolve `snapshot` e `hasMore`; páginas seguintes devem enviar o mesmo `snapshot`. Mudanças nas referências ou no HEAD invalidam a paginação com erro localizado 409: utilize **Atualizar** para reiniciar. Páginas têm até 100 commits, a interface solicita 50. Metadados e listas são limitados a 2 milhões de caracteres por comando, e os diffs a 200 mil caracteres/4 mil linhas. Saídas truncadas não são apresentadas como completas. Não há nova migration ou dependência.
 
 ### Identidade e paletas
 
