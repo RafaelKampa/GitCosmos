@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, watch } from 'vue';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 import AppHeader from '../app-header/AppHeader.vue';
 import ExplorerSidebar from '../explorer-sidebar/ExplorerSidebar.vue';
@@ -22,6 +22,7 @@ const context = computed(() => {
 });
 watch([() => route.fullPath, () => i18n.language], () => { void explorer.refresh(); }, { immediate: true });
 onUnmounted(explorer.cancel);
+onMounted(explorer.startAutoRefresh);
 </script>
 <template>
   <div class="app-shell" :class="{ 'sidebar-collapsed': preferences.collapsed }" :style="{ '--explorer-width': preferences.sidebarWidth + 'px' }">

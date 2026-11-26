@@ -15,6 +15,7 @@ function toggle(id: number) { closed.value = closed.value.includes(id) ? closed.
 <template>
 <aside id="explorer-sidebar" class="explorer-sidebar" :inert="preferences.collapsed ? true : undefined" :aria-label="i18n.t('explorer')">
 <h2 class="explorer-heading">{{ i18n.t('explorer') }}</h2>
+<button class="text-action explorer-refresh" type="button" :disabled="explorer.refreshingStatus" @click="explorer.refreshStatus">{{ i18n.t('dashboardRefresh') }}</button>
 <nav :aria-label="i18n.t('navigation')">
   <RouterLink to="/" class="explorer-root">
 <MaterialIcon name="dashboard" />{{ i18n.t('missionControl') }}</RouterLink>
@@ -32,7 +33,7 @@ function toggle(id: number) { closed.value = closed.value.includes(id) ? closed.
   <div v-for="workspace in explorer.index.workspaces" :key="workspace.id" class="explorer-workspace">
 <div class="explorer-workspace-heading">
 <button class="tree-toggle" type="button" :aria-label="i18n.t('toggleWorkspace') + ': ' + workspace.name" :aria-expanded="!closed.includes(workspace.id)" @click="toggle(workspace.id)"><MaterialIcon :name="closed.includes(workspace.id) ? 'chevron_right' : 'expand_more'" /></button>
-<RouterLink :to="'/workspaces/' + workspace.id">{{ workspace.name }}</RouterLink>
+<RouterLink :to="'/workspaces/' + workspace.id" :class="{ 'has-local-changes': explorer.changedWorkspaceIds.includes(workspace.id) }"><span v-if="explorer.changedWorkspaceIds.includes(workspace.id)" class="local-changes-dot" aria-hidden="true" />{{ workspace.name }}</RouterLink>
 </div>
 <ul v-if="!closed.includes(workspace.id)">
 <ExplorerRepositoryNode v-for="repo in explorer.index.repositories.filter(item => item.workspaceIds.includes(workspace.id))" :key="repo.id" :repository-id="repo.id" :workspace-id="workspace.id" :name="repo.name" :active="activeRepositoryId === repo.id" :to="'/workspaces/' + workspace.id + '/repositories/' + repo.id" />

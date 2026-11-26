@@ -14,6 +14,8 @@ import HorizontalScroll from '../../../shared/components/horizontal-scroll/Horiz
 import { foldMergeHistory } from './merge-folding';
 import FileStatusBadge from '../../../shared/components/file-status-badge/FileStatusBadge.vue';
 import HistoryFilters from './HistoryFilters.vue';
+import CommitFileBrowser from '../commit-file-browser/CommitFileBrowser.vue';
+import CommitFileMenu from '../commit-file-menu/CommitFileMenu.vue';
 import ResizeHandle from '../../../shared/components/resize-handle/ResizeHandle.vue';
 import { usePanelLayout } from '../../../core/preferences/panel-layout.store';
 import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
@@ -22,6 +24,8 @@ const props = defineProps<{ workspaceId: number; repositoryId: number }>();
 const i18n = useLanguageStore();
 const preferences = useExplorerPreferences();
 const layout = usePanelLayout();
+const detailTab = ref<'commit' | 'changes' | 'tree'>('commit'); const treeFocus = ref('');
+function showTree(path: string) { treeFocus.value = path; detailTab.value = 'tree'; }
 const filters = ref(preferences.historyFilters[props.repositoryId] || { branch: '', search: '' });
 const historyList = ref<HTMLElement>(); const focusNotice = ref('');
 let pendingFocus = preferences.historyNavigation[props.repositoryId]?.sha || ''; let focusVersion = 0;
@@ -161,27 +165,31 @@ onUnmounted(() => { focusVersion++; listRequest?.abort(); clearSelection(); });
         <button v-else-if="error" class="history-retry" type="button" :disabled="loading" @click="load(false)">{{ i18n.t('diffRetry') }}</button>
       </section>
       <ResizeHandle v-model="layout.sizes.historyGraph" axis="y" :min="120" :max="2000" :label="i18n.t('resizeHistoryGraph')" />
-      <section class="commit-details" :aria-label="i18n.t('historyDetails')" :aria-busy="detailsLoading || diffLoading" :style="{ height: layout.sizes.historyDetails ? layout.sizes.historyDetails + 'px' : undefined }">
+      <section class="commit-details" :class="{ 'commit-details--browser': detailTab !== 'commit' }" :aria-label="i18n.t('historyDetails')" :aria-busy="detailsLoading || diffLoading" :style="{ height: layout.sizes.historyDetails ? layout.sizes.historyDetails + 'px' : undefined }">
         <p v-if="detailsLoading" role="status">{{ i18n.t('historyLoading') }}</p>
         <div v-else-if="detailsError"><p role="alert">{{ detailsError }}</p><button class="commit-retry" type="button" @click="selectCommit(selected)">{{ i18n.t('diffRetry') }}</button></div>
         <template v-else-if="details">
-          <h2>{{ details.commit.subject }}</h2>
-          <code class="commit-sha">{{ details.commit.sha }}</code>
-          <p class="commit-author-details"><AuthorAvatar :name="details.commit.author" :email="details.commit.email" /><span>{{ details.commit.author }} &lt;{{ details.commit.email }}&gt; · {{ formatCommitDate(details.commit.authoredAt, i18n.language) }}</span></p>
-          <div class="commit-detail-refs"><CommitReferences :value="details.commit.refs" /></div>
+          <nav class="commit-detail-tabs" :aria-label="i18n.t('commitDetailTabs')"><button v-for="item in (['commit', 'changes', 'tree'] as const)" :key="item" :aria-pressed="detailTab === item" @click="detailTab = item">{{ i18n.t(item === 'commit' ? 'commitTab' : item === 'changes' ? 'commitChangesTab' : 'commitTreeTab') }}</button></nav>
+          <div v-if="detailTab !== 'commit'" class="commit-compact-summary"><AuthorAvatar :name="details.commit.author" :email="details.commit.email" /><strong>{{ details.commit.author }}</strong><code>{{ details.commit.sha.slice(0, 8) }}</code><time>{{ formatCommitDate(details.commit.authoredAt, i18n.language) }}</time><span>{{ details.commit.subject }}</span></div>
+          <CommitFileBrowser v-if="detailTab !== 'commit'" :repository-id="repositoryId" :workspace-id="workspaceId" :details="details" :mode="detailTab === 'changes' ? 'changes' : 'tree'" :focus-path="treeFocus" @show-tree="showTree" />
+          <template v-else>
+          <div class="commit-author-details"><AuthorAvatar class="commit-large-avatar" :name="details.commit.author" :email="details.commit.email" /><div><small>{{ i18n.t('historyAuthor') }}</small><p><strong>{{ details.commit.author }}</strong> &lt;{{ details.commit.email }}&gt;</p><time>{{ formatCommitDate(details.commit.authoredAt, i18n.language) }}</time></div></div>
+          <dl class="commit-metadata"><dt>SHA</dt><dd><code class="commit-sha">{{ details.commit.sha }}</code></dd><dt>{{ i18n.t('commitReferences') }}</dt><dd class="commit-detail-refs"><CommitReferences :value="details.commit.refs" /></dd><dt>{{ i18n.t('commitParents') }}</dt><dd class="commit-comparison"><span>{{ i18n.t(details.commit.parents.length ? 'historyFirstParent' : 'historyRoot') }}</span> <code v-for="parent in details.commit.parents" :key="parent">{{ parent }} </code></dd></dl>
+          <h2 class="commit-subject">{{ details.commit.subject }}</h2>
           <pre class="commit-message">{{ details.commit.message }}</pre>
-          <p class="commit-comparison">{{ i18n.t(details.commit.parents.length ? 'historyFirstParent' : 'historyRoot') }} <code v-for="parent in details.commit.parents" :key="parent">{{ parent }} </code></p>
           <p v-if="details.files.length === 0">{{ i18n.t('historyNoFiles') }}</p>
           <ul class="commit-files"><li v-for="(file, index) in details.files" :key="file.path">
-            <button :id="accordionId + '-file-' + index" class="commit-file-toggle" type="button" :aria-expanded="selectedFile === file.path" :aria-controls="accordionId + '-diff-' + index" @click="toggleFile(file.path)">
+            <div class="commit-file-row"><button :id="accordionId + '-file-' + index" class="commit-file-toggle" type="button" :aria-expanded="selectedFile === file.path" :aria-controls="accordionId + '-diff-' + index" @click="toggleFile(file.path)">
               <MaterialIcon class="file-chevron" :name="selectedFile === file.path ? 'expand_more' : 'chevron_right'" /><FileStatusBadge :status="file.status" /> <span v-if="file.originalPath">{{ file.originalPath }} → </span>{{ file.path }}
             </button>
+            <CommitFileMenu :repository-id="repositoryId" :workspace-id="workspaceId" :sha="details.commit.sha" :path="file.path" :parent="details.commit.parents[0] || ''" :deleted="file.status.startsWith('D')" @show-tree="showTree" /></div>
             <section v-if="selectedFile === file.path" :id="accordionId + '-diff-' + index" class="commit-file-diff" role="region" :aria-labelledby="accordionId + '-file-' + index" :aria-busy="diffLoading">
               <p v-if="diffLoading" role="status">{{ i18n.t('diffLoading') }}</p>
               <div v-else-if="diffError"><p role="alert">{{ diffError }}</p><button class="commit-diff-retry" type="button" @click="selectFile(file.path)">{{ i18n.t('diffRetry') }}</button></div>
               <DiffViewer v-else-if="diff" :diff="diff" />
             </section>
           </li></ul>
+          </template>
         </template>
         <p v-else>{{ i18n.t('historySelect') }}</p>
       </section>
@@ -216,6 +224,21 @@ button { color: var(--gc-text); background: var(--gc-surface); border: 1px solid
 .history-row.selected, .commit-file-toggle[aria-expanded="true"] { background: var(--gc-selection-bg); outline: 1px solid var(--gc-violet); outline-offset: -1px; }
 .history-row:hover { background: var(--gc-surface-raised); }
 .commit-details { padding: 1rem; }
+.commit-details--browser { display: flex; flex-direction: column; height: 60dvh; min-height: 0; }
+.commit-details--browser > nav, .commit-compact-summary { flex-shrink: 0; }
+.commit-details--browser > .commit-file-browser { flex: 1; min-height: 0; }
+.commit-detail-tabs { display: flex; gap: .5rem; border-bottom: 1px solid var(--gc-border); margin: -1rem -1rem 1rem; padding: .25rem .75rem; }
+.commit-detail-tabs button { border: 0; border-radius: 0; }
+.commit-detail-tabs button[aria-pressed='true'] { color: var(--gc-primary); box-shadow: inset 0 -2px var(--gc-primary); }
+.commit-author-details p { margin: .4rem 0; }
+.commit-author-details .commit-large-avatar { width: 48px; height: 48px; flex-basis: 48px; font-size: 1rem; }
+.commit-metadata { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .4rem 1rem; font-size: .8rem; }
+.commit-metadata dt { text-align: right; color: var(--gc-text-muted); }
+.commit-metadata dd { margin: 0; overflow-wrap: anywhere; }
+.commit-subject { border-block: 1px solid var(--gc-divider); padding-block: .8rem; }
+.commit-compact-summary { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding-bottom: .5rem; font-size: .8rem; }
+.commit-file-row { display: flex; min-width: 0; align-items: center; }
+.commit-file-row .commit-file-toggle { flex: 1; min-width: 0; }
 .commit-details h2 { font-size: 1.1rem; overflow-wrap: anywhere; }
 .commit-sha, .commit-comparison, .commit-files { overflow-wrap: anywhere; }
 .commit-message { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }

@@ -1,0 +1,20 @@
+import { beforeEach, expect, it } from 'vitest';
+import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
+import CommitTreeNode from './CommitTreeNode.vue';
+import CommitFileMenu from '../commit-file-menu/CommitFileMenu.vue';
+import { buildFileTree } from '../file-changes-list/file-tree';
+beforeEach(() => { localStorage.clear(); setActivePinia(createPinia()); });
+it('propagates nested file selection and Show in File Tree through each folder level', async () => {
+  const path = 'src/nested/file.cs';
+  const node = buildFileTree([{ path, originalPath: null, indexStatus: 'M', workTreeStatus: '.', isUntracked: false, isConflicted: false, isSubmodule: false }])[0]!;
+  const view = mount(CommitTreeNode, { props: { node, selected: '', repositoryId: 2, workspaceId: 1, sha: 'a'.repeat(40), parent: 'b'.repeat(40), changed: true }, global: { stubs: { CommitFileMenu: true } } });
+  await view.get('.commit-tree-select').trigger('click'); expect(view.emitted('select')).toEqual([[path]]);
+  const menu = view.getComponent(CommitFileMenu);
+  expect(menu.props()).toMatchObject({ path, repositoryId: 2, workspaceId: 1, changed: true, deleted: false });
+  menu.vm.$emit('showTree', path); expect(view.emitted('showTree')).toEqual([[path]]);
+  await view.setProps({ selected: path }); expect(view.get('.commit-tree-select').attributes('aria-pressed')).toBe('true');
+  await view.get('.commit-folder').trigger('click'); expect(view.find('.commit-tree-select').exists()).toBe(false);
+  await view.get('.commit-folder').trigger('click'); expect(view.get('.commit-tree-select').text()).toContain('file.cs');
+  view.unmount();
+});

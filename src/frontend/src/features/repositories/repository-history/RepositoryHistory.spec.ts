@@ -10,6 +10,8 @@ import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
 import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
 import HistoryFilters from './HistoryFilters.vue';
+import CommitFileMenu from '../commit-file-menu/CommitFileMenu.vue';
+import { CommitExplorerApiService } from '../../../core/repositories/commit-explorer-api.service';
 import type { CustomResponse } from '../../../shared/models/custom-response.model';
 import type { GitCommit, HistoryPage, CommitDetails, CommitDiff } from '../../../core/repositories/models/repository-history.model';
 
@@ -33,6 +35,22 @@ function mock() {
   const diff = vi.spyOn(RepositoryHistoryApiService.prototype, 'getDiff').mockResolvedValue(ok(patch));
   return { list, detail, diff };
 }
+
+it('offers Commit, Changes and File Tree for the selected commit and can reveal a changed file in its complete tree', async () => {
+  const api = mock();
+  const tree = vi.spyOn(CommitExplorerApiService.prototype, 'tree').mockResolvedValue(ok([{ path: 'new.txt', mode: '100644', sha: commit.sha }, { path: 'unchanged.txt', mode: '100644', sha: commit.sha }]));
+  vi.spyOn(CommitExplorerApiService.prototype, 'file').mockResolvedValue(ok({ path: 'new.txt', kind: 'text', text: 'snapshot code', base64: '', fullPath: 'C:/repo/new.txt' }));
+  const view = render(); await flushPromises(); await view.get('.commit-choice').trigger('click'); await flushPromises();
+  expect(view.findAll('.commit-detail-tabs button').map(button => button.text())).toEqual(['Commit', 'Changes', 'File Tree']);
+  expect(view.find('.commit-large-avatar').exists()).toBe(true);
+  await view.findAll('.commit-detail-tabs button')[1]!.trigger('click'); await flushPromises();
+  expect(view.findAll('.commit-tree-select')).toHaveLength(2); expect(tree).not.toHaveBeenCalled();
+  view.findAllComponents(CommitFileMenu)[0]!.vm.$emit('showTree', 'new.txt'); await flushPromises();
+  expect(view.get('.commit-detail-tabs button[aria-pressed="true"]').text()).toBe('File Tree');
+  expect(view.get('[data-path="unchanged.txt"]').text()).toContain('unchanged.txt');
+  expect(view.get('.snapshot-code').text()).toBe('snapshot code'); expect(api.list).toHaveBeenCalledTimes(1);
+  await view.findAll('.commit-detail-tabs button')[0]!.trigger('click'); expect(view.find('.commit-message').exists()).toBe(true);
+});
 
 it('resizes the graph and commit details without changing selected commits or loading history again', async () => {
   const api = mock(); const view = render(); await flushPromises();
@@ -127,7 +145,7 @@ it('loads pages, preserves graph edges, displays commit details and selects comm
   expect(view.get('.commit-sha').text()).toBe(commit.sha);
   expect(view.get('.commit-files').text()).toContain('old.txt →');
   const diffPending = deferred<CustomResponse<CommitDiff>>(); api.diff.mockReturnValueOnce(diffPending.promise);
-  await view.get('.commit-files button').trigger('click'); expect(view.get('.commit-details [role="status"]').text()).toContain('diferenças');
+  await view.get('.commit-files .commit-file-toggle').trigger('click'); expect(view.get('.commit-details [role="status"]').text()).toContain('diferenças');
   diffPending.resolve(ok(patch)); await flushPromises();
   expect(api.diff).toHaveBeenLastCalledWith(1, 2, commit.sha, 'new.txt', expect.any(AbortSignal));
   expect(view.getComponent(DiffViewer).props('diff')).toEqual(patch);
@@ -152,7 +170,7 @@ it.each(['list', 'detail', 'diff'] as const)('handles API, network and incomplet
   method.mockResolvedValueOnce({ success: true, result: null, errors: [], messages: [] });
   const view = render(); await flushPromises();
   if (target !== 'list') { await view.get('.commit-choice').trigger('click'); await flushPromises(); }
-  if (target === 'diff') { await view.get('.commit-files button').trigger('click'); await flushPromises(); }
+  if (target === 'diff') { await view.get('.commit-files .commit-file-toggle').trigger('click'); await flushPromises(); }
   const retry = target === 'list' ? '.history-retry' : target === 'detail' ? '.commit-retry' : '.commit-diff-retry';
   expect(view.get('[role="alert"]').text()).toBe('Localized failure');
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -194,7 +212,7 @@ it.each(['list', 'detail', 'diff'] as const)('aborts %s on unmount and ignores l
     method.mockReturnValueOnce(pending.promise);
     const view = render(); await flushPromises();
     if (target !== 'list') { await view.get('.commit-choice').trigger('click'); await flushPromises(); }
-    if (target === 'diff') { await view.get('.commit-files button').trigger('click'); await flushPromises(); }
+    if (target === 'diff') { await view.get('.commit-files .commit-file-toggle').trigger('click'); await flushPromises(); }
     const call = method.mock.calls[0]!;
     view.unmount(); wrapper = undefined;
     expect((call[call.length - 1] as AbortSignal).aborted).toBe(true);
@@ -211,10 +229,10 @@ it('aborts previous commit and file selections and ignores their late responses'
   await view.get('.commit-choice').trigger('click'); await view.get('.commit-choice').trigger('click'); await flushPromises();
   expect(api.detail.mock.calls[0]![3]!.aborted).toBe(true);
   pending.resolve(ok({ ...details, files: [] })); await flushPromises();
-  expect(view.findAll('.commit-files button')).toHaveLength(2);
+  expect(view.findAll('.commit-files .commit-file-toggle')).toHaveLength(2);
   const pendingDiff = deferred<CustomResponse<CommitDiff>>(); api.diff.mockReturnValueOnce(pendingDiff.promise);
-  await view.get('.commit-files button').trigger('click');
-  await view.findAll('.commit-files button')[1]!.trigger('click'); await flushPromises();
+  await view.get('.commit-files .commit-file-toggle').trigger('click');
+  await view.findAll('.commit-files .commit-file-toggle')[1]!.trigger('click'); await flushPromises();
   expect(api.diff.mock.calls[0]![4]!.aborted).toBe(true);
   pendingDiff.resolve(ok({ ...patch, kind: 'binary' })); await flushPromises();
   expect(view.getComponent(DiffViewer).props('diff').kind).toBe('text');
@@ -225,7 +243,7 @@ it('uses the current language through HTTP and reloads history after a language 
   vi.stubGlobal('fetch', fetchMock);
   useLanguageStore().setLanguage('es'); const view = render(); await flushPromises();
   await view.get('.commit-choice').trigger('click'); await flushPromises();
-  await view.get('.commit-files button').trigger('click'); await flushPromises();
+  await view.get('.commit-files .commit-file-toggle').trigger('click'); await flushPromises();
   expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('GetDiff'), expect.objectContaining({ headers: { 'Accept-Language': 'es' } }));
   useLanguageStore().setLanguage('en'); await flushPromises();
   expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('GetHistory'), expect.objectContaining({ headers: { 'Accept-Language': 'en' } }));
@@ -240,14 +258,19 @@ it('opens the diff immediately below its file and allows only one expanded file'
   await toggles[0]!.trigger('click'); await flushPromises();
   expect(toggles[0]!.attributes('aria-expanded')).toBe('true');
   expect(view.findAll('.commit-file-diff')).toHaveLength(1);
-  expect(view.get('.commit-file-diff').element.previousElementSibling).toBe(toggles[0]!.element);
+  const firstRow = toggles[0]!.element.closest('.commit-file-row');
+  expect(firstRow?.querySelector('.file-options')).not.toBeNull();
+  expect(view.get('.commit-file-diff').element.previousElementSibling).toBe(firstRow);
+  expect(view.get('.commit-file-diff').element.parentElement).toBe(firstRow!.parentElement);
   expect(view.get('.commit-file-diff').attributes('id')).toBe(toggles[0]!.attributes('aria-controls'));
   expect(view.get('.commit-file-diff').attributes('aria-labelledby')).toBe(toggles[0]!.attributes('id'));
   await toggles[1]!.trigger('click'); await flushPromises();
   expect(toggles[0]!.attributes('aria-expanded')).toBe('false');
   expect(toggles[1]!.attributes('aria-expanded')).toBe('true');
   expect(view.findAll('.commit-file-diff')).toHaveLength(1);
-  expect(view.get('.commit-file-diff').element.previousElementSibling).toBe(toggles[1]!.element);
+  const secondRow = toggles[1]!.element.closest('.commit-file-row');
+  expect(view.get('.commit-file-diff').element.previousElementSibling).toBe(secondRow);
+  expect(view.get('.commit-file-diff').attributes('aria-labelledby')).toBe(toggles[1]!.attributes('id'));
   await toggles[1]!.trigger('click'); await flushPromises();
   expect(view.find('.commit-file-diff').exists()).toBe(false);
   expect(api.diff).toHaveBeenCalledTimes(2);

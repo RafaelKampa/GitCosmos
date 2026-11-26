@@ -7,12 +7,19 @@ import CatalogAddDialog from '../catalog-add-dialog/CatalogAddDialog.vue';
 import { CatalogApiService } from '../../../core/catalog/catalog-api.service';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
+import { useExplorerStore } from '../../../core/catalog/explorer.store';
 import type { CatalogSnapshot } from '../../../core/catalog/catalog.model';
 import type { CustomResponse } from '../../../shared/models/custom-response.model';
 let wrapper: VueWrapper | undefined;
 beforeEach(() => { localStorage.clear(); setActivePinia(createPinia()); }); afterEach(() => wrapper?.unmount());
 const empty: CustomResponse<CatalogSnapshot> = { success: true, result: { workspaces: [], repositories: [] }, messages: [], errors: [] };
 function render(all = false) { wrapper = mount(MissionControl, { props: { all }, global: { plugins: [PrimeVue], stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' }, Button: { props: ['label','disabled'], template: '<button :disabled="disabled">{{ label }}</button>' }, CatalogAddDialog: true } } }); return wrapper; }
+it('updates the visible overview and workspace names when the shared status snapshot changes', async () => {
+  vi.spyOn(CatalogApiService.prototype, 'getOverview').mockResolvedValue(empty); const page = render(); await flushPromises();
+  const store = useExplorerStore(); store.index = { workspaces: [{ id: 1, name: 'Team' }], repositories: [{ id: 1, name: 'Repo', localPath: 'C:/repo', workspaceIds: [1], state: 'modified', error: null, status: { branch: 'main', isDetached: false, hasCommits: true, changedFiles: 1, modified: 1, added: 0, deleted: 0, renamed: 0, untracked: 0, conflicted: 0, staged: 1, unstaged: 0 } }] };
+  await flushPromises(); expect(page.findAll('.local-changes-dot')).toHaveLength(2); expect(page.get('.workspace-tile strong').classes()).toContain('has-local-changes');
+  store.index = { ...store.index, repositories: [] }; await flushPromises(); expect(page.findAll('.local-changes-dot')).toHaveLength(0);
+});
 it.each([{workspaces:null,repositories:[]},{workspaces:[],repositories:null}])('rejects partial overview collections: %s',async result=>{
   vi.spyOn(CatalogApiService.prototype,'getOverview').mockResolvedValue({...empty,result:result as unknown as CatalogSnapshot});const page=render();await flushPromises();expect(page.get('[role="alert"]').text()).toContain('Não foi possível');
 });

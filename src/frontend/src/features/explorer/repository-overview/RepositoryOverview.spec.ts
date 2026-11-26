@@ -12,6 +12,12 @@ const repositories: CatalogRepository[] = [
   { id: 3, name: 'Gone', localPath: 'C:/Gone', workspaceIds: [], state: 'unavailable', error: 'Pasta movida', status: null },
 ];
 function render() { wrapper = mount(RepositoryOverview, { props: { repositories, scopeKey: 'all', loading: false }, global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } }); return wrapper; }
+it('marks names with local changes and removes the dot when the repository is clean', async () => {
+  const page = render(); expect(page.findAll('.local-changes-dot')).toHaveLength(0);
+  await page.setProps({ repositories: [{ ...repositories[0]!, state: 'conflicted', status: { ...repositories[0]!.status!, changedFiles: 2, conflicted: 1 } }] });
+  expect(page.get('.repository-open-link strong').classes()).toContain('has-local-changes'); expect(page.findAll('.local-changes-dot')).toHaveLength(1);
+  await page.setProps({ repositories }); expect(page.findAll('.local-changes-dot')).toHaveLength(0);
+});
 it('keeps selection independent from navigation and applies select-all only to visible rows', async () => {
   const page = render(); const preferences = useExplorerPreferences();
   expect(page.get('.repository-open-link').attributes('href')).toBe('/repositories/1');

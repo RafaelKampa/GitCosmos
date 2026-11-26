@@ -20,6 +20,7 @@ async function load() {
   finally { if (!current.signal.aborted) loading.value = false; }
 }
 onMounted(load); watch(() => i18n.language, load); onUnmounted(() => request?.abort());
+watch(() => explorer.index, snapshot => { data.value = snapshot; });
 </script>
 <template>
 <section class="mission-control" :aria-busy="loading">
@@ -42,7 +43,7 @@ onMounted(load); watch(() => i18n.language, load); onUnmounted(() => request?.ab
 </div>
 <div class="workspace-tiles">
 <RouterLink v-for="workspace in data.workspaces" :key="workspace.id" class="workspace-tile" :to="'/workspaces/' + workspace.id">
-<strong>▤ &nbsp; {{ workspace.name }}</strong>
+<strong :class="{ 'has-local-changes': explorer.changedWorkspaceIds.includes(workspace.id) }"><span v-if="explorer.changedWorkspaceIds.includes(workspace.id)" class="local-changes-dot" aria-hidden="true" />{{ workspace.name }}</strong>
 <small>{{ data.repositories.filter(repo => repo.workspaceIds.includes(workspace.id)).length }} {{ i18n.t('repositoriesMetric') }}</small>
 </RouterLink>
 <p v-if="!loading && data.workspaces.length === 0" class="muted">{{ i18n.t('explorerNoWorkspaces') }}</p>

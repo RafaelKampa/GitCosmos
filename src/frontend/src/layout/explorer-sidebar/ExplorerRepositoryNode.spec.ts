@@ -65,3 +65,20 @@ it('keeps independent repository expansion in each workspace and for ungrouped e
   expect(view.findAllComponents(ExplorerRepositoryNode)[0]!.get('.repository-toggle').attributes('aria-expanded')).toBe('true');
   expect(refresh).not.toHaveBeenCalled();
 });
+it('marks every workspace containing local changes and clears all indicators after a clean snapshot', async () => {
+  const explorer = useExplorerStore();
+  const status = { branch: 'main', isDetached: false, hasCommits: true, changedFiles: 1, modified: 0, added: 0, deleted: 0, renamed: 0, untracked: 1, conflicted: 0, staged: 0, unstaged: 1 };
+  explorer.index = { workspaces: [{ id: 1, name: 'One' }, { id: 2, name: 'Two' }], repositories: [
+    { id: 3, name: 'Shared', localPath: 'C:/repo', workspaceIds: [1, 2], status, state: 'modified', error: null },
+    { id: 4, name: 'Solo', localPath: 'C:/solo', workspaceIds: [], status, state: 'modified', error: null },
+  ] };
+  const refresh = vi.spyOn(explorer, 'refreshStatus').mockResolvedValue();
+  view = mount(ExplorerSidebar, { global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } });
+  expect(view.findAll('.repository-tree-link.has-local-changes')).toHaveLength(3);
+  expect(view.findAll('.explorer-workspace-heading .local-changes-dot')).toHaveLength(2);
+  await view.get('.tree-toggle').trigger('click'); expect(view.findAll('.explorer-workspace-heading .local-changes-dot')).toHaveLength(2);
+  await view.get('.explorer-refresh').trigger('click'); expect(refresh).toHaveBeenCalledTimes(1);
+  explorer.refreshingStatus = true; await flushPromises(); expect(view.get('.explorer-refresh').attributes('disabled')).toBeDefined();
+  explorer.index = { ...explorer.index, repositories: explorer.index.repositories.map(repo => ({ ...repo, status: { ...status, changedFiles: 0 }, state: 'clean' })) };
+  await flushPromises(); expect(view.findAll('.local-changes-dot')).toHaveLength(0); expect(view.findAll('.has-local-changes')).toHaveLength(0);
+});

@@ -10,6 +10,7 @@ import { WorkspaceRepositoryApiService } from '../../../core/workspaces/workspac
 import { WorkspaceApiService } from '../../../core/workspaces/workspace-api.service';
 import { ApiError } from '../../../core/api/api-error';
 import { useLanguageStore } from '../../../core/i18n/language.store';
+import { useExplorerStore } from '../../../core/catalog/explorer.store';
 import type { CustomResponse } from '../../../shared/models/custom-response.model';
 import type { PagedResult } from '../../../shared/models/pagination.model';
 import type { WorkspaceResponse } from '../../../core/workspaces/models/responses/workspace-response.model';
@@ -43,6 +44,13 @@ describe('workspaces page', () => {
   function submit(page: VueWrapper, name = 'Team') {
     page.getComponent(WorkspaceCreateForm).vm.$emit('create', name);
   }
+  it('highlights a workspace while one of its repositories has local changes', async () => {
+    vi.spyOn(WorkspaceApiService.prototype, 'getWorkspaces').mockResolvedValue(listing());
+    const page = render(); await flushPromises(); expect(page.find('.local-changes-dot').exists()).toBe(false);
+    const store = useExplorerStore(); store.index = { workspaces: [], repositories: [{ id: 5, name: 'Repo', localPath: 'C:/repo', workspaceIds: [1], state: 'modified', error: null, status: { branch: 'main', isDetached: false, hasCommits: true, changedFiles: 1, modified: 1, added: 0, deleted: 0, renamed: 0, untracked: 0, conflicted: 0, staged: 0, unstaged: 1 } }] };
+    await flushPromises(); expect(page.get('.has-local-changes').text()).toContain('Team'); expect(page.findAll('.local-changes-dot')).toHaveLength(1);
+    store.index = { workspaces: [], repositories: [] }; await flushPromises(); expect(page.find('.local-changes-dot').exists()).toBe(false);
+  });
   function rowAction(page: VueWrapper, key: 'renameWorkspace' | 'deleteWorkspace' | 'workspaceRepositories') {
     const label = useLanguageStore().t(key);
     const button = page.findAll('.workspace-row-actions button').find(action => action.text() === label);

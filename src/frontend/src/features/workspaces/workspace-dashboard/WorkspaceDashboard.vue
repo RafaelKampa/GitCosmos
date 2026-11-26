@@ -8,10 +8,12 @@ import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
 import RepositoryOverview from '../../explorer/repository-overview/RepositoryOverview.vue';
 import WorkspaceRepositoriesDialog from '../workspace-repositories-dialog/WorkspaceRepositoriesDialog.vue';
+import { useExplorerStore } from '../../../core/catalog/explorer.store';
 
 const props = defineProps<{ workspaceId: number }>();
 const emit = defineEmits<{ catalogChanged: [] }>();
 const i18n = useLanguageStore();
+const explorer = useExplorerStore();
 const api = new WorkspaceDashboardApiService(() => i18n.language, i18n.t);
 const dashboard = ref<WorkspaceDashboardResponse | null>(null);
 const loading = ref(true);
@@ -35,6 +37,13 @@ async function load() {
   } finally { if (!current.signal.aborted) loading.value = false; }
 }
 onMounted(load);
+watch(() => explorer.index, snapshot => {
+  if (!dashboard.value) return;
+  dashboard.value = { ...dashboard.value, repositories: dashboard.value.repositories.map(repo => {
+    const current = snapshot.repositories.find(item => item.id === repo.id && item.localPath === repo.localPath);
+    return current && current.state !== 'unknown' ? { ...repo, status: current.status, state: current.state, error: current.error } : repo;
+  }) };
+});
 watch([() => props.workspaceId, () => i18n.language], load);
 onUnmounted(() => request?.abort());
 </script>
@@ -43,7 +52,7 @@ onUnmounted(() => request?.abort());
     <RouterLink class="overview-back" to="/">{{ i18n.t('missionControl') }}</RouterLink>
     <div class="page-heading">
 <div>
-<h1>{{ dashboard ? dashboard.name : i18n.t('dashboardTitle') }}</h1>
+<h1><span v-if="explorer.changedWorkspaceIds.includes(workspaceId)" class="local-changes-dot" aria-hidden="true" />{{ dashboard ? dashboard.name : i18n.t('dashboardTitle') }}</h1>
 <p class="page-description">{{ i18n.t('workspaceOverview') }}</p>
 </div>
 <div class="page-actions">

@@ -5,10 +5,12 @@ import { RouterLink } from 'vue-router';
 import { useLanguageStore } from '../../core/i18n/language.store';
 import { useExplorerPreferences } from '../../core/preferences/explorer-preferences.store';
 import RepositoryBranches from '../../features/repositories/repository-branches/RepositoryBranches.vue';
+import { useExplorerStore } from '../../core/catalog/explorer.store';
 const props = withDefaults(defineProps<{ repositoryId: number; workspaceId?: number; name: string; to: string; active: boolean }>(), { workspaceId: 0 });
 const resourceOpen = ref<Record<string, boolean>>({});
 const i18n = useLanguageStore(); const preferences = useExplorerPreferences(); const id = useId();
 const expanded = computed(() => preferences.expandedRepositories[props.to] === true);
+const explorer = useExplorerStore();
 const sections = [
   { key: 'branches', label: 'repositoryBranchesTab', icon: 'account_tree' },
   { key: 'remotes', label: 'repositoryRemotesTab', icon: 'cloud' },
@@ -22,7 +24,7 @@ const sections = [
   <li class="explorer-repository">
     <div class="repository-tree-heading" :class="{ 'explorer-active': active }">
       <button type="button" class="tree-toggle repository-toggle" :aria-expanded="expanded" :aria-controls="id" :aria-label="i18n.t('toggleRepository') + ': ' + name" @click="preferences.expandedRepositories[to] = !expanded; resourceOpen = {}"><MaterialIcon :name="expanded ? 'expand_more' : 'chevron_right'" /></button>
-      <RouterLink class="repository-tree-link" :to="to" :title="name" :aria-current="active ? 'page' : undefined">{{ name }}</RouterLink>
+      <RouterLink class="repository-tree-link" :class="{ 'has-local-changes': explorer.changedRepositoryIds.includes(repositoryId) }" :to="to" :title="name" :aria-current="active ? 'page' : undefined"><span v-if="explorer.changedRepositoryIds.includes(repositoryId)" class="local-changes-dot" aria-hidden="true" />{{ name }}</RouterLink>
     </div>
     <ul v-if="expanded" :id="id" class="repository-tree-sections">
       <li><RouterLink class="repository-section-link" :to="to" @click="preferences.repositoryTabs[repositoryId] = 'changes'">{{ i18n.t('repositoryChangesTab') }}</RouterLink></li>

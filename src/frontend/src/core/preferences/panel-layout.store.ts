@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
-const defaults = { changesWidth: 30, changesHeight: 0, unstaged: 50, historyGraph: 0, historyDetails: 0 };
+const defaults = { changesWidth: 30, changesHeight: 0, unstaged: 50, historyGraph: 0, historyDetails: 0, commitTreeWidth: 30 };
 type PanelSizes = typeof defaults;
-const bounds: Record<keyof PanelSizes, [number, number]> = { changesWidth: [20, 70], changesHeight: [200, 2400], unstaged: [15, 85], historyGraph: [120, 2000], historyDetails: [160, 2400] };
+const bounds: Record<keyof PanelSizes, [number, number]> = { changesWidth: [20, 70], changesHeight: [200, 2400], unstaged: [15, 85], historyGraph: [120, 2000], historyDetails: [160, 2400], commitTreeWidth: [15, 70] };
 function saved(): PanelSizes {
   const sizes = { ...defaults };
   try {

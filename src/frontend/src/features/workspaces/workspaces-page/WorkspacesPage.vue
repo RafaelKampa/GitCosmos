@@ -10,8 +10,10 @@ import { WorkspaceApiService } from '../../../core/workspaces/workspace-api.serv
 import type { WorkspaceResponse } from '../../../core/workspaces/models/responses/workspace-response.model';
 import type { CustomResponse } from '../../../shared/models/custom-response.model';
 import { ApiError } from '../../../core/api/api-error';
+import { useExplorerStore } from '../../../core/catalog/explorer.store';
 
 const i18n = useLanguageStore();
+const explorer = useExplorerStore();
 const emit = defineEmits<{ catalogChanged: [] }>();
 const api = new WorkspaceApiService(() => i18n.language, i18n.t);
 const items = ref<readonly WorkspaceResponse[]>([]);
@@ -118,7 +120,7 @@ onUnmounted(() => { listRequest?.abort(); saveRequest?.abort(); });
       <ul v-else class="workspace-list">
         <li v-for="workspace in items" :key="workspace.id">
           <div class="workspace-summary">
-            <h2>{{ workspace.name }}</h2>
+            <h2 :class="{ 'has-local-changes': explorer.changedWorkspaceIds.includes(workspace.id) }"><span v-if="explorer.changedWorkspaceIds.includes(workspace.id)" class="local-changes-dot" aria-hidden="true" />{{ workspace.name }}</h2>
             <p>{{ i18n.t('workspaceRepositoryCount') }}: {{ workspace.repositoryCount }}</p>
           </div>
           <div class="workspace-row-actions" role="group" :aria-label="i18n.t('workspaceActions') + ': ' + workspace.name">

@@ -44,6 +44,9 @@ h3 { font-size: 1.05rem; }
 .explorer-root, .explorer-workspace-heading { display: flex; align-items: center; gap: .7rem; color: var(--gc-text-muted); border-radius: .45rem; min-height: 2.5rem; padding: .5rem .75rem; font-size: .95rem; overflow-wrap: anywhere; }
 .explorer-sidebar a:hover { background: var(--gc-surface-raised); text-decoration: none; }
 .explorer-sidebar .router-link-exact-active, .explorer-sidebar .explorer-active { color: var(--gc-text); background: var(--gc-selection-bg); font-weight: 600; }
+.app-shell .has-local-changes.has-local-changes { color: var(--gc-heading-h1); }
+.local-changes-dot { display: inline-block; width: .45rem; height: .45rem; margin-right: .4rem; border-radius: 50%; background: var(--gc-heading-h1); vertical-align: middle; flex-shrink: 0; }
+.explorer-refresh { margin: 0 .75rem .75rem; font-size: .8rem; }
 .explorer-section-label { display: flex; justify-content: space-between; margin: 1.5rem .75rem .6rem; text-transform: uppercase; font-size: .75rem; color: var(--gc-text-muted); letter-spacing: .04em; }
 .explorer-section-label a { color: var(--gc-text-muted); }
 .explorer-workspace-heading { padding-left: .4rem; gap: .2rem; }

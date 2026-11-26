@@ -50,7 +50,7 @@ function repositoryUrl(id: number) { return props.workspaceId ? '/workspaces/' +
     <ul v-else class="repository-collection" :class="preferences.view">
       <li v-for="repo in visible" :key="repo.id" class="repository-entry">
         <input type="checkbox" :aria-label="i18n.t('selectRepository') + ': ' + repo.name" :checked="selectedIds.includes(repo.id)" @change="preferences.toggleSelection(scopeKey, repo.id)" />
-        <RouterLink class="repository-open-link" :to="repositoryUrl(repo.id)"><strong>{{ repo.name }}</strong><small>{{ repo.localPath }}</small></RouterLink>
+        <RouterLink class="repository-open-link" :to="repositoryUrl(repo.id)"><strong :class="{ 'has-local-changes': !!repo.status && repo.status.changedFiles > 0 }"><span v-if="repo.status && repo.status.changedFiles > 0" class="local-changes-dot" aria-hidden="true" />{{ repo.name }}</strong><small>{{ repo.localPath }}</small></RouterLink>
         <span class="repository-branch">{{ repo.status ? (repo.status.isDetached ? i18n.t('gitDetached') : repo.status.branch) : '—' }}</span>
         <span class="repository-state" :class="repo.state" :title="repo.error ?? undefined">{{ i18n.t(labels[repo.state]) }}</span>
         <span class="repository-divergence" :title="i18n.t('localTracking')">↓ {{ repo.status?.behind ?? '—' }} · ↑ {{ repo.status?.ahead ?? '—' }}</span>

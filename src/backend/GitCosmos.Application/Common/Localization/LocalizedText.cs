@@ -8,6 +8,10 @@ public static class LocalizedText
     {
         ["pt-BR"] = new()
         {
+            ["commit.limit"] = "A visualização atingiu o limite: 10 mil arquivos, 2 MB por arquivo ou 2 milhões de caracteres por consulta.",
+            ["commit.submodule"] = "O item é um submódulo. Seu conteúdo pertence a outro repositório.",
+            ["commit.text_only"] = "Blame está disponível somente para arquivos de texto UTF-8.",
+            ["commit.desktop_failed"] = "Não foi possível abrir o aplicativo. Verifique se VS Code ou Visual Studio está instalado e se o Windows permite sua execução.",
             ["branch.not_ff"] = "A branch divergiu do upstream. Fast-forward não é possível; revise os commits antes de escolher merge ou rebase.",
             ["branch.rebase_range"] = "O rebase interativo exige de 1 a 200 commits lineares. Merges precisam ser tratados separadamente.",
             ["branch.publish_first"] = "Publique a ponta da branch no remoto escolhido antes de abrir o Pull Request.",
@@ -93,6 +97,10 @@ public static class LocalizedText
         },
         ["es"] = new()
         {
+            ["commit.limit"] = "La vista alcanzó el límite: 10 mil archivos, 2 MB por archivo o 2 millones de caracteres por consulta.",
+            ["commit.submodule"] = "El elemento es un submódulo. Su contenido pertenece a otro repositorio.",
+            ["commit.text_only"] = "Blame solo está disponible para archivos de texto UTF-8.",
+            ["commit.desktop_failed"] = "No se pudo abrir la aplicación. Compruebe la instalación de VS Code o Visual Studio y los permisos de Windows.",
             ["branch.not_ff"] = "La rama divergió de upstream. No es posible fast-forward; revisa los commits antes de elegir merge o rebase.",
             ["branch.rebase_range"] = "El rebase interactivo requiere entre 1 y 200 commits lineales. Los merges deben tratarse por separado.",
             ["branch.publish_first"] = "Publica la punta de la rama en el remoto elegido antes de abrir el Pull Request.",
@@ -178,6 +186,10 @@ public static class LocalizedText
         },
         ["en"] = new()
         {
+            ["commit.limit"] = "The view reached its limit: 10,000 files, 2 MB per file or 2 million characters per query.",
+            ["commit.submodule"] = "This item is a submodule. Its content belongs to another repository.",
+            ["commit.text_only"] = "Blame is available for UTF-8 text files only.",
+            ["commit.desktop_failed"] = "Could not open the application. Check that VS Code or Visual Studio is installed and Windows allows it to run.",
             ["branch.not_ff"] = "The branch diverged from upstream. Fast-forward is unavailable; review commits before choosing merge or rebase.",
             ["branch.rebase_range"] = "Interactive rebase requires 1 to 200 linear commits. Handle merges separately.",
             ["branch.publish_first"] = "Publish the branch tip to the chosen remote before opening a Pull Request.",

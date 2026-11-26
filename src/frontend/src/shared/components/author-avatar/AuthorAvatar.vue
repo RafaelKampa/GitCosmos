@@ -26,6 +26,6 @@ watch(() => props.email, async (email, _, onCleanup) => {
 </template>
 
 <style scoped>
-.author-avatar { display: inline-flex; width: 24px; height: 24px; flex: 0 0 24px; border-radius: .25rem; overflow: hidden; align-items: center; justify-content: center; background: var(--gc-info-bg); color: var(--gc-info); font-size: .65rem; font-weight: 600; }
+.author-avatar { display: inline-flex; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; overflow: hidden; align-items: center; justify-content: center; background: var(--gc-info-bg); color: var(--gc-info); font-size: .65rem; font-weight: 600; }
 img { display: block; width: 100%; height: 100%; object-fit: cover; }
 </style>

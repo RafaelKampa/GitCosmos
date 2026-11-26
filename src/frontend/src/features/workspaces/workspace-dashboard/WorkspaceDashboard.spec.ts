@@ -8,6 +8,7 @@ import WorkspaceRepositoriesDialog from '../workspace-repositories-dialog/Worksp
 import { WorkspaceDashboardApiService } from '../../../core/workspaces/workspace-dashboard-api.service';
 import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
+import { useExplorerStore } from '../../../core/catalog/explorer.store';
 import type { CustomResponse } from '../../../shared/models/custom-response.model';
 import type { WorkspaceDashboardResponse } from '../../../core/workspaces/models/responses/workspace-dashboard-response.model';
 
@@ -53,6 +54,17 @@ describe('workspace dashboard', () => {
     expect(api).toHaveBeenCalledTimes(2);
     expect(page.getComponent(RepositoryOverview).props('repositories')).toHaveLength(0);
     expect(page.text()).toContain('ainda não possui repositórios');
+  });
+  it('applies shared status updates without resetting the dashboard or reading unknown status as clean', async () => {
+    const pending = deferred(); vi.spyOn(WorkspaceDashboardApiService.prototype, 'getDashboard').mockReturnValueOnce(pending.promise);
+    const page = render(); const store = useExplorerStore(); store.index = { workspaces: [], repositories: [] }; await flushPromises();
+    pending.resolve(populated); await flushPromises();
+    const repo = populated.result!.repositories[0]!;
+    store.index = { workspaces: [], repositories: [{ ...repo, workspaceIds: [1], state: 'modified', status: { ...repo.status!, changedFiles: 1 } }] };
+    await flushPromises(); expect(page.findAll('.local-changes-dot')).toHaveLength(2);
+    store.index = { ...store.index, repositories: [{ ...repo, workspaceIds: [1], state: 'unknown', status: null }] }; await flushPromises();
+    expect(page.getComponent(RepositoryOverview).props('repositories')[0]!.status!.changedFiles).toBe(1);
+    store.index = { workspaces: [], repositories: [] }; await flushPromises(); expect(page.getComponent(RepositoryOverview).props('repositories')).toHaveLength(2);
   });
 
   it.each([new ApiError('Workspace não encontrado'), new Error('private'), null])('shows API, network and incomplete response errors and supports retry: %s', async cause => {
