@@ -9,6 +9,9 @@ import { ApiError } from '../../../core/api/api-error';
 import FileChangesList from '../file-changes-list/FileChangesList.vue';
 import DiffViewer from '../diff-viewer/DiffViewer.vue';
 import RepositoryHistory from '../repository-history/RepositoryHistory.vue';
+import ConflictResolver from '../conflict-resolver/ConflictResolver.vue';
+import RepositoryRecovery from '../repository-recovery/RepositoryRecovery.vue';
+import { useExplorerStore } from '../../../core/catalog/explorer.store';
 import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
 import RepositoryCommitForm from '../repository-commit-form/RepositoryCommitForm.vue';
 import ResizeHandle from '../../../shared/components/resize-handle/ResizeHandle.vue';
@@ -23,6 +26,8 @@ const selection = ref<DiffSelection | null>(null);
 const diff = ref<FileDiff | null>(null);
 const preferences = useExplorerPreferences();
 const layout = usePanelLayout();
+const explorer = useExplorerStore();
+const conflictedSelection = computed(() => repository.value?.files.some(file => file.path === selection.value?.path && file.isConflicted) || false);
 const tab = computed({ get: () => preferences.repositoryTabs[props.repositoryId] === 'history' ? 'history' : 'changes', set: (value: string) => { preferences.repositoryTabs[props.repositoryId] = value; } });
 const tabs = { changes: 'repositoryChangesTab', history: 'repositoryHistoryTab' } as const;
 const loading = ref(true); const diffLoading = ref(false);
@@ -34,6 +39,10 @@ let listRequest: AbortController | undefined;
 let diffRequest: AbortController | undefined;
 function message(cause: unknown) { return cause instanceof ApiError ? cause.message : i18n.t('changesError'); }
 function move(value: MoveFilesRequest) { void commitForm.value?.move(value); }
+async function resolvedConflict() {
+  await edited({ operation: 'stage', head: '', committed: false, pushAttempted: false, pushSucceeded: false, warning: null }, i18n.t('conflictResolved'));
+  void explorer.refreshStatus();
+}
 async function edited(result: RepositoryEditResult, text: string) {
   editMessage.value = text; editWarning.value = result.warning ?? ''; refreshingEdit.value = true;
   listRequest?.abort(); diffRequest?.abort(); selection.value = null; diff.value = null; diffError.value = ''; diffLoading.value = false;
@@ -67,6 +76,7 @@ async function select(value: DiffSelection) {
   diffRequest?.abort();
   const current = new AbortController(); diffRequest = current;
   selection.value = value; diff.value = null; diffError.value = ''; diffLoading.value = true;
+  if (conflictedSelection.value) { diffLoading.value = false; return; }
   try {
     const response = await api.getDiff(props.workspaceId, props.repositoryId, value, current.signal);
     if (!current.signal.aborted) {
@@ -103,7 +113,9 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
       <dl class="repository-metrics"><div class="metric-tile ahead"><dt>{{ i18n.t('gitChangedFiles') }}</dt><dd>{{ repository.status.changedFiles }}</dd></div><div class="metric-tile ahead"><dt>{{ i18n.t('aheadMetric') }}</dt><dd>{{ repository.status.ahead ?? '—' }}</dd></div><div class="metric-tile behind"><dt>{{ i18n.t('behindMetric') }}</dt><dd>{{ repository.status.behind ?? '—' }}</dd></div></dl>
       <nav class="repository-tabs" :aria-label="i18n.t('repositorySections')"><button v-for="(label, key) in tabs" :key="key" type="button" :disabled="editing" :aria-pressed="tab === key" @click="tab = key">{{ i18n.t(label) }}</button></nav>
       <RepositoryHistory v-if="tab === 'history'" :workspace-id="workspaceId" :repository-id="repositoryId" />
-      <div v-else class="repository-workbench" :style="{ '--changes-width': layout.sizes.changesWidth + '%', '--changes-height': layout.sizes.changesHeight ? layout.sizes.changesHeight + 'px' : '100dvh' }">
+      <template v-else>
+      <RepositoryRecovery :repository-id="repositoryId" :workspace-id="workspaceId" :conflict-count="repository.status.conflicted" :disabled="editing" @busy="operationBusy = $event" @changed="load" />
+      <div class="repository-workbench" :style="{ '--changes-width': layout.sizes.changesWidth + '%', '--changes-height': layout.sizes.changesHeight ? layout.sizes.changesHeight + 'px' : '100dvh' }">
         <FileChangesList :files="repository.files" :selected="selection" :disabled="editing" @select="select" @move="move" />
         <ResizeHandle v-model="layout.sizes.changesWidth" class="changes-width-resize" axis="x" percent :min="20" :max="70" :label="i18n.t('resizeChangesWidth')" />
         <section class="file-diff-panel" :aria-busy="diffLoading" :aria-label="i18n.t('changesDiff')">
@@ -111,7 +123,8 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
             <h2>{{ selection.path }}</h2>
             <span>{{ i18n.t(selection.area === 'staged' ? 'changesStaged' : 'changesWorking') }}</span>
           </div>
-          <p v-if="diffLoading" class="diff-feedback" role="status">{{ i18n.t('diffLoading') }}</p>
+          <ConflictResolver v-if="conflictedSelection && selection" :repository-id="repositoryId" :workspace-id="workspaceId" :path="selection.path" @busy="operationBusy = $event" @resolved="resolvedConflict" />
+          <p v-else-if="diffLoading" class="diff-feedback" role="status">{{ i18n.t('diffLoading') }}</p>
           <div v-else-if="diffError" class="diff-feedback">
             <p role="alert">{{ diffError }}</p>
             <Button :label="i18n.t('diffRetry')" @click="select(selection!)" />
@@ -125,6 +138,7 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
           <RepositoryCommitForm ref="commitForm" :repository-id="repositoryId" :workspace-id="workspaceId" :files="repository.files" :has-commits="repository.status.hasCommits" @busy="operationBusy = $event" @changed="edited" />
         </div>
       </div>
+      </template>
     </template>
   </section>
 </template>

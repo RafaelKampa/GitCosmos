@@ -7,6 +7,9 @@ import FileChangesList from '../file-changes-list/FileChangesList.vue';
 import DiffViewer from '../diff-viewer/DiffViewer.vue';
 import RepositoryHistory from '../repository-history/RepositoryHistory.vue';
 import RepositoryCommitForm from '../repository-commit-form/RepositoryCommitForm.vue';
+import ConflictResolver from '../conflict-resolver/ConflictResolver.vue';
+import RepositoryRecovery from '../repository-recovery/RepositoryRecovery.vue';
+import { useExplorerStore } from '../../../core/catalog/explorer.store';
 import { RepositoryEditApiService } from '../../../core/repositories/repository-edit-api.service';
 import { useExplorerPreferences } from '../../../core/preferences/explorer-preferences.store';
 import { RepositoryChangesApiService } from '../../../core/repositories/repository-changes-api.service';
@@ -36,6 +39,8 @@ describe('repository details', () => {
       RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' },
       Button: { props: ['label', 'disabled'], template: '<button :disabled="disabled">{{ label }}</button>' },
       RepositoryHistory: true,
+      RepositoryRecovery: true,
+      ConflictResolver: true,
     } } });
     return wrapper;
   }
@@ -91,6 +96,17 @@ describe('repository details', () => {
     expect(workbench.attributes('style')).toContain('--changes-width: 32%');
     await page.get('.changes-height-resize').trigger('keydown', { key: 'End' });
     expect(workbench.attributes('style')).toContain('--changes-height: 2400px');
+  });
+  it('opens the resolver for conflicts, preserves commit drafts and refreshes status after resolution', async () => {
+    const conflicted = { ...changes, result: { ...changes.result!, status: { ...changes.result!.status, conflicted: 1 }, files: [{ ...changes.result!.files[0]!, isConflicted: true }] } };
+    const api = vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValueOnce(conflicted).mockResolvedValue(changes);
+    const diff = vi.spyOn(RepositoryChangesApiService.prototype, 'getDiff'); const refresh = vi.spyOn(useExplorerStore(), 'refreshStatus').mockResolvedValue();
+    const page = render(); await flushPromises(); const form = page.getComponent(RepositoryCommitForm); await form.get('input:not([type="checkbox"])').setValue('Saved draft');
+    await select(page); expect(diff).not.toHaveBeenCalled(); const resolver = page.getComponent(ConflictResolver); expect(resolver.props()).toEqual({ repositoryId: 2, workspaceId: 1, path: 'file.txt' });
+    resolver.vm.$emit('busy', true); await flushPromises(); expect(page.getComponent(FileChangesList).props('disabled')).toBe(true);
+    resolver.vm.$emit('resolved'); await flushPromises(); expect(api).toHaveBeenCalledTimes(2); expect(refresh).toHaveBeenCalledTimes(1); expect(page.findComponent(ConflictResolver).exists()).toBe(false); expect(page.getComponent(RepositoryCommitForm).get<HTMLInputElement>('input:not([type="checkbox"])').element.value).toBe('Saved draft');
+    const recovery = page.getComponent(RepositoryRecovery); recovery.vm.$emit('busy', true); await flushPromises(); expect(page.getComponent(FileChangesList).props('disabled')).toBe(true);
+    recovery.vm.$emit('changed'); await flushPromises(); expect(api).toHaveBeenCalledTimes(3);
   });
 
   it('refreshes the active repository and history when a branch operation invalidates its state', async () => {

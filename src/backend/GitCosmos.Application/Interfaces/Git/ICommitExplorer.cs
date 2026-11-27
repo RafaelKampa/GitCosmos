@@ -27,4 +27,5 @@ public interface ICommitFileDesktop
     void Open(string name, byte[] content);
     void Diff(string tool, string name, byte[] before, byte[] after);
     void Reveal(string fullPath);
+    void Edit(string fullPath);
 }

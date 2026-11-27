@@ -29,9 +29,13 @@ public class CommitFileDesktopTests
         desktop.Open("script.cmd", [3]); Assert.EndsWith("notepad.exe", desktop.Calls.Last().FileName);
         Assert.Throws<OperationFailedAppException>(() => desktop.Diff("arbitrary", "file", [], []));
         var full = Path.Combine(desktop.Root, "test.txt"); File.WriteAllText(full, "content");
+        desktop.Code = true; desktop.Edit(full); Assert.Contains("--disable-extensions", desktop.Calls.Last().ArgumentList);
+        desktop.Code = false; desktop.Edit(full); Assert.EndsWith("notepad.exe", desktop.Calls.Last().FileName);
+        Assert.Throws<OperationFailedAppException>(() => desktop.Edit(Path.Combine(desktop.Root, "missing.txt")));
         desktop.Reveal(full); Assert.Equal("/select,", desktop.Calls.Last().ArgumentList[0]);
         desktop.Reveal(Path.Combine(desktop.Root, "missing", "file")); Assert.Equal(desktop.Root, desktop.Calls.Last().ArgumentList[0]);
         desktop.Supported = false; Assert.Empty(desktop.Tools()); Assert.Throws<OperationFailedAppException>(() => desktop.Open("file", [])); Assert.Throws<OperationFailedAppException>(() => desktop.Reveal(full));
+        Assert.Throws<OperationFailedAppException>(() => desktop.Edit(full));
     }
     [Theory]
     [InlineData("native")]

@@ -21,6 +21,7 @@ public static class DependencyInjection
             .AddScoped<IRepositoryChangesReader, RepositoryChangesReader>()
             .AddScoped<IRepositoryHistoryReader, RepositoryHistoryReader>()
             .AddScoped<ICommitExplorer, CommitExplorer>()
+            .AddScoped<IRepositoryConflicts, RepositoryConflicts>()
             .AddSingleton<IGitBlobReader>(_ => new GitBlobReader("git", TimeSpan.FromSeconds(10)))
             .AddSingleton<ICommitFileDesktop, CommitFileDesktop>()
             .AddScoped<IRepositoryEditor, RepositoryEditor>()

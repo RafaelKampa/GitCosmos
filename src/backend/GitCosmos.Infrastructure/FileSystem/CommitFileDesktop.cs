@@ -74,5 +74,12 @@ public class CommitFileDesktop : ICommitFileDesktop
             Launch(explorer, parent);
         }
     }
+    public void Edit(string fullPath)
+    {
+        if (!SupportsDesktop || !File.Exists(fullPath)) throw Failed();
+        var code = Discover().GetValueOrDefault("vscode").Path;
+        if (code is not null) Launch(code, "--new-window", "--disable-extensions", fullPath);
+        else Launch(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "notepad.exe"), fullPath);
+    }
     private static OperationFailedAppException Failed() => new(LocalizedText.Get("commit.desktop_failed"));
 }

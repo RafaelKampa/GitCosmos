@@ -8,6 +8,12 @@ public static class LocalizedText
     {
         ["pt-BR"] = new()
         {
+            ["conflict.invalid"] = "Selecione um arquivo em conflito regular e uma resolução válida. Links e submódulos exigem resolução externa.",
+            ["conflict.stale"] = "O arquivo ou a operação mudou desde a leitura/revisão. Atualize e revise a resolução novamente.",
+            ["conflict.failed"] = "Não foi possível concluir a resolução. O arquivo ou índice pode ter sido alterado. Atualize o estado antes de repetir.",
+            ["conflict.markers"] = "A resolução ainda contém marcadores de conflito. Edite o resultado antes de preparar o arquivo.",
+            ["conflict.operation"] = "Este fluxo resolve conflitos de merge/rebase. Conclua ou aborte a outra operação na sua ferramenta Git.",
+            ["conflict.limit"] = "O arquivo excede o limite de 2 MB para resolução nesta tela.",
             ["commit.limit"] = "A visualização atingiu o limite: 10 mil arquivos, 2 MB por arquivo ou 2 milhões de caracteres por consulta.",
             ["commit.submodule"] = "O item é um submódulo. Seu conteúdo pertence a outro repositório.",
             ["commit.text_only"] = "Blame está disponível somente para arquivos de texto UTF-8.",
@@ -97,6 +103,12 @@ public static class LocalizedText
         },
         ["es"] = new()
         {
+            ["conflict.invalid"] = "Seleccione un archivo regular en conflicto y una resolución válida. Enlaces y submódulos requieren resolución externa.",
+            ["conflict.stale"] = "El archivo o la operación cambió desde la lectura/revisión. Actualice y revise la resolución de nuevo.",
+            ["conflict.failed"] = "No se pudo completar la resolución. El archivo o índice puede haber cambiado. Actualice antes de repetir.",
+            ["conflict.markers"] = "La resolución aún contiene marcadores de conflicto. Edite el resultado antes de preparar el archivo.",
+            ["conflict.operation"] = "Este flujo resuelve conflictos de merge/rebase. Complete o aborte la otra operación con su herramienta Git.",
+            ["conflict.limit"] = "El archivo supera el límite de 2 MB para resolver en esta vista.",
             ["commit.limit"] = "La vista alcanzó el límite: 10 mil archivos, 2 MB por archivo o 2 millones de caracteres por consulta.",
             ["commit.submodule"] = "El elemento es un submódulo. Su contenido pertenece a otro repositorio.",
             ["commit.text_only"] = "Blame solo está disponible para archivos de texto UTF-8.",
@@ -186,6 +198,12 @@ public static class LocalizedText
         },
         ["en"] = new()
         {
+            ["conflict.invalid"] = "Select a regular conflicted file and a valid resolution. Links and submodules require external resolution.",
+            ["conflict.stale"] = "The file or operation changed since the read/review. Refresh and review the resolution again.",
+            ["conflict.failed"] = "Could not complete the resolution. The file or index may have changed. Refresh before retrying.",
+            ["conflict.markers"] = "The resolution still contains conflict markers. Edit the result before staging the file.",
+            ["conflict.operation"] = "This flow resolves merge/rebase conflicts. Complete or abort the other operation in your Git tool.",
+            ["conflict.limit"] = "The file exceeds the 2 MB limit for resolution in this view.",
             ["commit.limit"] = "The view reached its limit: 10,000 files, 2 MB per file or 2 million characters per query.",
             ["commit.submodule"] = "This item is a submodule. Its content belongs to another repository.",
             ["commit.text_only"] = "Blame is available for UTF-8 text files only.",
