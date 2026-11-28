@@ -8,6 +8,14 @@ public static class LocalizedText
     {
         ["pt-BR"] = new()
         {
+            ["local.completed"] = "Estado dos arquivos atualizado.",
+            ["local.invalid"] = "Selecione arquivos regulares e uma operação válida. Ignore exige arquivos não rastreados; descarte atua somente em Unstaged. Operações pendentes, arquivos grandes ou intervalos sem histórico podem impedir esta ação.",
+            ["local.failed"] = "A operação não foi confirmada. Arquivos ou índice podem ter mudado; atualize antes de repetir. Não há repetição ou recuperação automática.",
+            ["lines.invalid"] = "Selecione linhas de alteração válidas. Para alterações de fim de arquivo, selecione também as linhas relacionadas.",
+            ["lines.stale"] = "O arquivo, índice ou HEAD mudou. Atualize o diff e revise novamente.",
+            ["lines.failed"] = "Não foi possível confirmar a operação. O índice pode ter sido alterado; atualize antes de repetir.",
+            ["lines.unsupported"] = "Use Stage/Unstage de arquivo inteiro para binários, metadados, renomes, conflitos, operações em andamento ou arquivos acima do limite.",
+            ["lines.completed"] = "Seleção aplicada ao índice.",
             ["conflict.invalid"] = "Selecione um arquivo em conflito regular e uma resolução válida. Links e submódulos exigem resolução externa.",
             ["conflict.stale"] = "O arquivo ou a operação mudou desde a leitura/revisão. Atualize e revise a resolução novamente.",
             ["conflict.failed"] = "Não foi possível concluir a resolução. O arquivo ou índice pode ter sido alterado. Atualize o estado antes de repetir.",
@@ -103,6 +111,14 @@ public static class LocalizedText
         },
         ["es"] = new()
         {
+            ["local.completed"] = "Estado de los archivos actualizado.",
+            ["local.invalid"] = "Seleccione archivos regulares y una operación válida. Ignore requiere archivos sin seguimiento; descartar solo se permite en Unstaged. Operaciones pendientes, archivos grandes o rangos sin historial pueden impedir esta acción.",
+            ["local.failed"] = "No se confirmó la operación. Los archivos o el índice pueden haber cambiado; actualice antes de repetir. No hay reintento ni recuperación automática.",
+            ["lines.invalid"] = "Seleccione líneas de cambio válidas. Para cambios al final del archivo, seleccione también las líneas relacionadas.",
+            ["lines.stale"] = "El archivo, índice o HEAD cambió. Actualice el diff y revise de nuevo.",
+            ["lines.failed"] = "No se pudo confirmar la operación. El índice puede haber cambiado; actualice antes de repetir.",
+            ["lines.unsupported"] = "Use Stage/Unstage del archivo completo para binarios, metadatos, renombres, conflictos, operaciones pendientes o archivos que superan el límite.",
+            ["lines.completed"] = "Selección aplicada al índice.",
             ["conflict.invalid"] = "Seleccione un archivo regular en conflicto y una resolución válida. Enlaces y submódulos requieren resolución externa.",
             ["conflict.stale"] = "El archivo o la operación cambió desde la lectura/revisión. Actualice y revise la resolución de nuevo.",
             ["conflict.failed"] = "No se pudo completar la resolución. El archivo o índice puede haber cambiado. Actualice antes de repetir.",
@@ -198,6 +214,14 @@ public static class LocalizedText
         },
         ["en"] = new()
         {
+            ["local.completed"] = "File state updated.",
+            ["local.invalid"] = "Select regular files and a valid operation. Ignore requires untracked files; discard is only available in Unstaged. Pending operations, large files or ranges without history may prevent this action.",
+            ["local.failed"] = "The operation was not confirmed. Files or the index may have changed; refresh before retrying. There is no automatic retry or recovery.",
+            ["lines.invalid"] = "Select valid changed lines. For end-of-file changes, also select related lines.",
+            ["lines.stale"] = "The file, index or HEAD changed. Refresh the diff and review again.",
+            ["lines.failed"] = "The operation could not be confirmed. The index may have changed; refresh before retrying.",
+            ["lines.unsupported"] = "Use whole-file Stage/Unstage for binaries, metadata, renames, conflicts, pending operations or files exceeding the limit.",
+            ["lines.completed"] = "Selection applied to the index.",
             ["conflict.invalid"] = "Select a regular conflicted file and a valid resolution. Links and submodules require external resolution.",
             ["conflict.stale"] = "The file or operation changed since the read/review. Refresh and review the resolution again.",
             ["conflict.failed"] = "Could not complete the resolution. The file or index may have changed. Refresh before retrying.",

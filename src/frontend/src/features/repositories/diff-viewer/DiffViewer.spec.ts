@@ -48,3 +48,33 @@ it.each(['binary', 'tooLarge', 'submodule', 'conflict', 'empty'] as const)('show
   useLanguageStore().setLanguage('es'); await wrapper.vm.$nextTick();
   expect(wrapper.get('[role="status"]').text()).not.toBe(portuguese);
 });
+
+it('offers hover actions for a whole hunk and only Unstage in the staged area', async () => {
+  const diff: FileDiff = { path: 'file', area: 'working', kind: 'text', patch: '@@ -1 +1,2 @@\n-old\n+new\n+extra\n' };
+  wrapper = mount(DiffViewer, { props: { diff, selectable: true } });
+  expect(wrapper.find('input').exists()).toBe(false); expect(wrapper.find('.hunk-actions').exists()).toBe(false);
+  await wrapper.get('.diff-line').trigger('mouseenter'); await wrapper.get('.hunk-move').trigger('click');
+  expect(wrapper.emitted('action')!.at(-1)).toEqual(['move', [1, 2, 3]]);
+  await wrapper.get('.hunk-discard').trigger('click'); expect(wrapper.emitted('action')!.at(-1)).toEqual(['discard', [1, 2, 3]]);
+  await wrapper.setProps({ selected: [2] }); await wrapper.get('.hunk-move').trigger('click'); expect(wrapper.emitted('action')!.at(-1)).toEqual(['move', [2]]);
+  await wrapper.setProps({ diff: { ...diff, area: 'staged' } }); await wrapper.get('.diff-hunk').trigger('focus');
+  expect(wrapper.find('.hunk-discard').exists()).toBe(false); expect(wrapper.get('.hunk-move').text()).toContain('Unstage');
+  await wrapper.setProps({ disabled: true }); const count = wrapper.emitted('action')!.length; wrapper.get('.hunk-move').element.dispatchEvent(new MouseEvent('click', { bubbles: true })); expect(wrapper.emitted('action')!).toHaveLength(count);
+  await wrapper.get('.diff-hunk').trigger('mouseleave'); expect(wrapper.find('.hunk-actions').exists()).toBe(false);
+});
+it('maps native text selection to changed line IDs and preserves the selected text in the context menu', async () => {
+  const diff: FileDiff = { path: 'file', area: 'working', kind: 'text', patch: '@@ -1,2 +1,3 @@\n context\n-old\n+new\n+extra\n' };
+  wrapper = mount(DiffViewer, { props: { diff, selectable: true }, attachTo: document.body });
+  const codes = wrapper.findAll('code'); const range = document.createRange(); range.setStart(codes[1]!.element.firstChild!, 0); range.setEnd(codes[2]!.element.firstChild!, 4);
+  const selection = window.getSelection()!; selection.removeAllRanges(); selection.addRange(range);
+  document.dispatchEvent(new Event('selectionchange')); await wrapper.vm.$nextTick(); expect(wrapper.emitted('selection')!.at(-1)).toEqual([[2, 3]]);
+  await wrapper.get('.diff-viewer').trigger('contextmenu', { clientX: 120, clientY: 70 });
+  expect(wrapper.emitted('context')!.at(-1)).toEqual([expect.objectContaining({ ids: [2, 3], start: 2, end: 2, x: 120, y: 70, text: expect.stringContaining('new') })]);
+  selection.removeAllRanges(); document.dispatchEvent(new Event('selectionchange')); await wrapper.vm.$nextTick(); expect(wrapper.emitted('selection')!.at(-1)).toEqual([[]]);
+  const count = wrapper.emitted('context')!.length; await wrapper.get('.diff-viewer').trigger('contextmenu'); expect(wrapper.emitted('context')!).toHaveLength(count);
+  range.setStart(codes[0]!.element.firstChild!, 0); range.setEnd(codes[0]!.element.firstChild!, 3); selection.addRange(range);
+  await wrapper.get('.diff-viewer').trigger('mouseup'); expect(wrapper.emitted('selection')!.at(-1)).toEqual([[]]);
+  await wrapper.setProps({ disabled: true }); const previous = wrapper.emitted('selection')!.length; document.dispatchEvent(new Event('selectionchange')); await wrapper.get('.diff-viewer').trigger('contextmenu'); expect(wrapper.emitted('selection')!).toHaveLength(previous);
+  await wrapper.setProps({ selectable: false, disabled: false }); document.dispatchEvent(new Event('selectionchange')); await wrapper.get('.diff-viewer').trigger('contextmenu'); expect(wrapper.emitted('context')!).toHaveLength(count);
+  selection.removeAllRanges();
+});

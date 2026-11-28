@@ -7,7 +7,9 @@ import type { RepositoryChanges, DiffSelection, FileDiff } from '../../../core/r
 import { useLanguageStore } from '../../../core/i18n/language.store';
 import { ApiError } from '../../../core/api/api-error';
 import FileChangesList from '../file-changes-list/FileChangesList.vue';
-import DiffViewer from '../diff-viewer/DiffViewer.vue';
+import LineStaging from '../line-staging/LineStaging.vue';
+import LocalFileMenu from '../local-file-menu/LocalFileMenu.vue';
+import type { LocalFileContext } from '../../../core/repositories/models/local-files.model';
 import RepositoryHistory from '../repository-history/RepositoryHistory.vue';
 import ConflictResolver from '../conflict-resolver/ConflictResolver.vue';
 import RepositoryRecovery from '../repository-recovery/RepositoryRecovery.vue';
@@ -31,7 +33,8 @@ const conflictedSelection = computed(() => repository.value?.files.some(file => 
 const tab = computed({ get: () => preferences.repositoryTabs[props.repositoryId] === 'history' ? 'history' : 'changes', set: (value: string) => { preferences.repositoryTabs[props.repositoryId] = value; } });
 const tabs = { changes: 'repositoryChangesTab', history: 'repositoryHistoryTab' } as const;
 const loading = ref(true); const diffLoading = ref(false);
-const operationBusy = ref(false); const refreshingEdit = ref(false); const editing = computed(() => operationBusy.value || refreshingEdit.value);
+const operationBusy = ref(false); const lineBusy = ref(false); const menuBusy = ref(false); const fileContext = ref<LocalFileContext | null>(null); const menuRevision = ref(0); const refreshingEdit = ref(false); const editing = computed(() => operationBusy.value || lineBusy.value || menuBusy.value || refreshingEdit.value);
+function openFileMenu(value: LocalFileContext) { fileContext.value = value; menuRevision.value++; }
 const editMessage = ref(''); const editWarning = ref('');
 const commitForm = ref<InstanceType<typeof RepositoryCommitForm>>();
 const error = ref(''); const diffError = ref('');
@@ -41,6 +44,10 @@ function message(cause: unknown) { return cause instanceof ApiError ? cause.mess
 function move(value: MoveFilesRequest) { void commitForm.value?.move(value); }
 async function resolvedConflict() {
   await edited({ operation: 'stage', head: '', committed: false, pushAttempted: false, pushSucceeded: false, warning: null }, i18n.t('conflictResolved'));
+  void explorer.refreshStatus();
+}
+async function stagedLines() {
+  await edited({ operation: 'stage', head: '', committed: false, pushAttempted: false, pushSucceeded: false, warning: null }, i18n.t('localCompleted'));
   void explorer.refreshStatus();
 }
 async function edited(result: RepositoryEditResult, text: string) {
@@ -57,7 +64,7 @@ async function edited(result: RepositoryEditResult, text: string) {
   finally { if (listRequest === current) refreshingEdit.value = false; }
 }
 async function load() {
-  operationBusy.value = false; refreshingEdit.value = false;
+  operationBusy.value = false; lineBusy.value = false; menuBusy.value = false; fileContext.value = null; refreshingEdit.value = false;
   editMessage.value = ''; editWarning.value = '';
   listRequest?.abort(); diffRequest?.abort();
   const current = new AbortController(); listRequest = current;
@@ -116,7 +123,7 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
       <template v-else>
       <RepositoryRecovery :repository-id="repositoryId" :workspace-id="workspaceId" :conflict-count="repository.status.conflicted" :disabled="editing" @busy="operationBusy = $event" @changed="load" />
       <div class="repository-workbench" :style="{ '--changes-width': layout.sizes.changesWidth + '%', '--changes-height': layout.sizes.changesHeight ? layout.sizes.changesHeight + 'px' : '100dvh' }">
-        <FileChangesList :files="repository.files" :selected="selection" :disabled="editing" @select="select" @move="move" />
+        <FileChangesList :files="repository.files" :selected="selection" :disabled="editing" @select="select" @move="move" @context="openFileMenu" />
         <ResizeHandle v-model="layout.sizes.changesWidth" class="changes-width-resize" axis="x" percent :min="20" :max="70" :label="i18n.t('resizeChangesWidth')" />
         <section class="file-diff-panel" :aria-busy="diffLoading" :aria-label="i18n.t('changesDiff')">
           <div v-if="selection" class="file-diff-heading">
@@ -129,17 +136,18 @@ onUnmounted(() => { listRequest?.abort(); diffRequest?.abort(); });
             <p role="alert">{{ diffError }}</p>
             <Button :label="i18n.t('diffRetry')" @click="select(selection!)" />
           </div>
-          <DiffViewer v-else-if="diff" :diff="diff" />
+          <LineStaging v-else-if="diff" :disabled="operationBusy || menuBusy || refreshingEdit" :repository-id="repositoryId" :workspace-id="workspaceId" :diff="diff" @busy="lineBusy = $event" @changed="stagedLines" />
           <p v-else-if="repository.files.length === 0" class="repository-clean" role="status">{{ i18n.t('changesClean') }}</p>
           <p v-else class="diff-feedback">{{ i18n.t('diffSelectFile') }}</p>
         </section>
         <ResizeHandle v-model="layout.sizes.changesHeight" class="changes-height-resize" axis="y" :min="200" :max="2400" :label="i18n.t('resizeChangesHeight')" />
         <div class="repository-commit-panel">
-          <RepositoryCommitForm ref="commitForm" :repository-id="repositoryId" :workspace-id="workspaceId" :files="repository.files" :has-commits="repository.status.hasCommits" @busy="operationBusy = $event" @changed="edited" />
+          <RepositoryCommitForm ref="commitForm" :disabled="editing" :repository-id="repositoryId" :workspace-id="workspaceId" :files="repository.files" :has-commits="repository.status.hasCommits" @busy="operationBusy = $event" @changed="edited" />
         </div>
       </div>
       </template>
     </template>
+    <LocalFileMenu v-if="fileContext" :key="menuRevision" :repository-id="repositoryId" :workspace-id="workspaceId" :context="fileContext" :untracked="fileContext.paths.every(path => repository?.files.some(file => file.path === path && file.isUntracked))" @close="fileContext = null" @busy="menuBusy = $event" @move="move" @changed="stagedLines" />
   </section>
 </template>
 

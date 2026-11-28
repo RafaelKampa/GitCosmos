@@ -18,6 +18,8 @@ public static class DependencyInjection
             .AddScoped<IRepositoryHistoryService, RepositoryHistoryService>()
             .AddScoped<ICommitExplorerService, CommitExplorerService>()
             .AddScoped<IRepositoryConflictService, RepositoryConflictService>()
+            .AddScoped<IRepositoryLinesService, RepositoryLinesService>()
+            .AddScoped<ILocalFilesService, LocalFilesService>()
             .AddScoped<IRepositoryEditService, RepositoryEditService>()
             .AddScoped<IRepositoryBranchService, RepositoryBranchService>()
             .AddScoped<IRepositoryCatalogService, RepositoryCatalogService>();

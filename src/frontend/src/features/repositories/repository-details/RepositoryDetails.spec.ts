@@ -5,6 +5,9 @@ import PrimeVue from 'primevue/config';
 import RepositoryDetails from './RepositoryDetails.vue';
 import FileChangesList from '../file-changes-list/FileChangesList.vue';
 import DiffViewer from '../diff-viewer/DiffViewer.vue';
+import LineStaging from '../line-staging/LineStaging.vue';
+import LocalFileMenu from '../local-file-menu/LocalFileMenu.vue';
+import { RepositoryLinesApiService } from '../../../core/repositories/repository-lines-api.service';
 import RepositoryHistory from '../repository-history/RepositoryHistory.vue';
 import RepositoryCommitForm from '../repository-commit-form/RepositoryCommitForm.vue';
 import ConflictResolver from '../conflict-resolver/ConflictResolver.vue';
@@ -32,7 +35,7 @@ function deferred<T>() {
 
 describe('repository details', () => {
   let wrapper: VueWrapper | undefined;
-  beforeEach(() => { localStorage.clear(); setActivePinia(createPinia()); });
+  beforeEach(() => { localStorage.clear(); setActivePinia(createPinia()); vi.spyOn(RepositoryLinesApiService.prototype, 'read').mockImplementation(async file => ({ success: true, errors: [], messages: [], result: { diff: { path: file.path, area: file.area, kind: 'text', patch: patch.result!.patch }, token: 'snapshot', canSelect: true, reason: '' } })); });
   afterEach(() => { wrapper?.unmount(); wrapper = undefined; vi.unstubAllGlobals(); });
   function render() {
     wrapper = mount(RepositoryDetails, { props: { workspaceId: 1, repositoryId: 2 }, global: { plugins: [PrimeVue], stubs: {
@@ -41,6 +44,7 @@ describe('repository details', () => {
       RepositoryHistory: true,
       RepositoryRecovery: true,
       ConflictResolver: true,
+      LocalFileMenu: true,
     } } });
     return wrapper;
   }
@@ -207,6 +211,46 @@ describe('repository details', () => {
     await page.get('.diff-feedback button').trigger('click'); await flushPromises();
     expect(page.find('[role="alert"]').exists()).toBe(false);
     expect(page.findComponent(DiffViewer).exists()).toBe(true);
+  });
+
+  it('refreshes partial staging without unmounting the commit draft and blocks concurrent form actions', async () => {
+    const lists = vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValue(changes);
+    vi.spyOn(RepositoryChangesApiService.prototype, 'getDiff').mockResolvedValue(patch);
+    const refresh = vi.spyOn(useExplorerStore(), 'refreshStatus').mockResolvedValue();
+    const page = render(); await flushPromises(); await select(page);
+    const form = page.getComponent(RepositoryCommitForm); await form.get('input:not([type="checkbox"])').setValue('Keep draft');
+    const editor = page.getComponent(LineStaging); editor.vm.$emit('busy', true); await flushPromises();
+    expect(form.props('disabled')).toBe(true); expect(page.getComponent(FileChangesList).props('disabled')).toBe(true);
+    editor.vm.$emit('busy', false); await flushPromises(); expect(form.props('disabled')).toBe(false);
+    editor.vm.$emit('changed'); await flushPromises();
+    expect(lists).toHaveBeenCalledTimes(2); expect(refresh).toHaveBeenCalledTimes(1); expect(form.get<HTMLInputElement>('input:not([type="checkbox"])').element.value).toBe('Keep draft');
+    expect(page.text()).toContain('Estado dos arquivos atualizado'); expect(page.findComponent(LineStaging).exists()).toBe(false);
+  });
+
+  it.each([
+    { untracked: true, operation: 'stage' as const },
+    { untracked: false, operation: 'stage' as const },
+    { untracked: false, operation: 'unstage' as const },
+  ])('integrates a scoped file context menu and its multi-selection (untracked=$untracked, operation=$operation)', async ({ untracked, operation }) => {
+    const base = changes.result!.files[0]!;
+    const selectedFiles = ['other', 'file.txt'].map(path => ({ ...base, path, indexStatus: untracked ? '.' : 'M', workTreeStatus: untracked ? '?' : 'M', isUntracked: untracked }));
+    const lists = vi.spyOn(RepositoryChangesApiService.prototype, 'getChanges').mockResolvedValue({ ...changes, result: { ...changes.result!, files: [{ ...base, path: 'unselected' }, ...selectedFiles] } });
+    const prepare = vi.spyOn(RepositoryEditApiService.prototype, 'prepare').mockResolvedValue({ success: true, errors: [], messages: [], result: { token: 'review-token', operation, paths: ['file.txt', 'other'], fileCount: 2, head: 'sha', amend: false, published: false, pushDestination: null } });
+    const execute = vi.spyOn(RepositoryEditApiService.prototype, 'execute').mockResolvedValue({ success: true, errors: [], messages: ['Moved'], result: { operation, head: 'sha', committed: false, pushAttempted: false, pushSucceeded: false, warning: null } });
+    const page = render(); await flushPromises(); const context = { path: 'file.txt', area: operation === 'stage' ? 'working' : 'staged', paths: ['file.txt', 'other'], all: ['file.txt', 'other', 'unselected'], x: 20, y: 40 };
+    const form = page.getComponent(RepositoryCommitForm); const formElement = form.get('form').element;
+    await form.get('input:not([type="checkbox"])').setValue('Keep menu draft');
+    page.getComponent(FileChangesList).vm.$emit('context', context); await flushPromises(); const menu = page.getComponent(LocalFileMenu); expect(menu.props('context')).toEqual(context); expect(menu.props('untracked')).toBe(untracked);
+    menu.vm.$emit('busy', true); await flushPromises(); expect(page.getComponent(RepositoryCommitForm).props('disabled')).toBe(true);
+    menu.vm.$emit('busy', false); await flushPromises();
+    menu.vm.$emit('move', { operation, paths: context.paths }); await flushPromises();
+    const request = { repositoryId: 2, workspaceId: 1, operation, paths: ['file.txt', 'other'], subject: '', description: '', amend: false, push: false };
+    expect(prepare).toHaveBeenCalledExactlyOnceWith(request, expect.any(AbortSignal));
+    expect(execute).toHaveBeenCalledExactlyOnceWith(request, 'review-token', expect.any(AbortSignal));
+    expect(lists).toHaveBeenCalledTimes(2);
+    expect(page.getComponent(RepositoryCommitForm).get('form').element).toBe(formElement);
+    expect(form.get<HTMLInputElement>('input:not([type="checkbox"])').element.value).toBe('Keep menu draft');
+    menu.vm.$emit('close'); await flushPromises(); expect(page.findComponent(LocalFileMenu).exists()).toBe(false);
   });
 
   it('cancels a stale diff when a different file is selected', async () => {

@@ -114,3 +114,11 @@ it('uses the current language in real preflight HTTP requests', async () => {
   const view = render(); await fill(view); await view.get('form').trigger('submit'); await flushPromises();
   expect(fetchMock).toHaveBeenCalledWith('/api/RepositoryEdit/Prepare', expect.objectContaining({ headers: { 'Accept-Language': 'es', 'Content-Type': 'application/json' } }));
 });
+
+it('preserves its draft and refuses commit or whole-file staging during an external index operation', async () => {
+  const api = mock(); const view = render(); await fill(view); await view.get('.commit-options-toggle').trigger('click');
+  await view.setProps({ disabled: true }); expect(view.get('.commit-options button').attributes('disabled')).toBeDefined();
+  await view.get('form').trigger('submit'); await view.vm.move({ operation: 'stage', paths: ['file.txt'] }); expect(api.prepare).not.toHaveBeenCalled();
+  expect(view.get('input:not([type="checkbox"])').attributes('disabled')).toBeDefined(); await view.setProps({ disabled: false });
+  expect(view.get<HTMLInputElement>('input:not([type="checkbox"])').element.value).toBe(' Subject ');
+});

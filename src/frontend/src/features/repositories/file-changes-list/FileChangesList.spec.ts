@@ -66,3 +66,25 @@ it('distinguishes added, removed and modified files with semantic badges', () =>
   expect(wrapper.get('.file-status.deleted').text()).toBe('−');
   expect(wrapper.get('.file-status.modified').text()).toBe('M');
 });
+
+it('selects visible intervals with Shift, toggles individual files with Ctrl and expands only via the arrow', async () => {
+  wrapper = mount(FileChangesList, { props: { selected: null, files: ['folder/a', 'folder/b', 'folder/c', 'z'].map(path => ({ ...file, path })) } });
+  const group = wrapper.findAll('section')[0]!;
+  const files = () => group.findAll('.file-change');
+  await files()[0]!.trigger('click'); await files()[2]!.trigger('click', { shiftKey: true }); await group.get('.move-files').trigger('click');
+  expect(wrapper.emitted('move')!.at(-1)).toEqual([{ operation: 'stage', paths: ['folder/a', 'folder/b', 'folder/c'] }]);
+  await files()[1]!.trigger('click', { ctrlKey: true }); await group.get('.move-files').trigger('click'); expect(wrapper.emitted('move')!.at(-1)).toEqual([{ operation: 'stage', paths: ['folder/a', 'folder/c'] }]);
+  await group.get('.folder-select').trigger('click'); expect(files()).toHaveLength(4); await group.get('.move-files').trigger('click'); expect(wrapper.emitted('move')!.at(-1)).toEqual([{ operation: 'stage', paths: ['folder/a', 'folder/b', 'folder/c'] }]);
+  await files()[1]!.trigger('click', { ctrlKey: true }); await group.get('.move-files').trigger('click'); expect(wrapper.emitted('move')!.at(-1)).toEqual([{ operation: 'stage', paths: ['folder/a', 'folder/c'] }]);
+  await group.get('.folder-select').trigger('click'); await group.get('.folder-select').trigger('click', { ctrlKey: true }); expect(group.get('.move-files').attributes('disabled')).toBeDefined();
+  await group.get('.folder-toggle').trigger('click'); expect(files()).toHaveLength(1); await group.get('.folder-toggle').trigger('click'); expect(files()).toHaveLength(4);
+});
+
+it('keeps a multi-selection on right click, selects an outside file and exposes keyboard menu and stage', async () => {
+  wrapper = mount(FileChangesList, { props: { selected: null, files: ['a', 'b', 'c'].map(path => ({ ...file, path })) } }); const group = wrapper.findAll('section')[0]!; const files = group.findAll('.file-change');
+  await files[0]!.trigger('click'); await files[1]!.trigger('click', { ctrlKey: true }); await files[0]!.trigger('contextmenu', { clientX: 30, clientY: 40 }); expect(wrapper.emitted('context')!.at(-1)).toEqual([expect.objectContaining({ paths: ['a', 'b'], x: 30, y: 40 })]);
+  await files[2]!.trigger('contextmenu'); expect(wrapper.emitted('context')!.at(-1)).toEqual([expect.objectContaining({ paths: ['c'] })]);
+  await files[2]!.trigger('keydown', { key: 'Enter' }); expect(wrapper.emitted('move')!.at(-1)).toEqual([{ operation: 'stage', paths: ['c'] }]);
+  await files[2]!.trigger('keydown', { key: 'F10', shiftKey: true }); await files[2]!.trigger('keydown', { key: 'ContextMenu' }); await files[2]!.trigger('keydown', { key: 'x' });
+  const count = wrapper.emitted('context')!.length; await wrapper.setProps({ disabled: true }); files[0]!.element.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true })); files[0]!.element.dispatchEvent(new MouseEvent('click', { bubbles: true })); expect(wrapper.emitted('context')!).toHaveLength(count);
+});

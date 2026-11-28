@@ -7,7 +7,7 @@ import { ApiError } from '../../../core/api/api-error';
 import { RepositoryEditApiService } from '../../../core/repositories/repository-edit-api.service';
 import type { GitFileChange } from '../../../core/repositories/models/repository-changes.model';
 import type { RepositoryEditPlan, RepositoryEditRequest, RepositoryEditResult, MoveFilesRequest } from '../../../core/repositories/models/repository-edit.model';
-const props = defineProps<{ repositoryId: number; workspaceId: number; files: readonly GitFileChange[]; hasCommits: boolean }>();
+const props = defineProps<{ repositoryId: number; workspaceId: number; files: readonly GitFileChange[]; hasCommits: boolean; disabled?: boolean }>();
 const emit = defineEmits<{ busy: [value: boolean]; changed: [result: RepositoryEditResult, message: string] }>();
 const i18n = useLanguageStore(); const api = new RepositoryEditApiService(() => i18n.language, i18n.t);
 const subject = ref(''); const description = ref(''); const amend = ref(false); const options = ref(false);
@@ -30,7 +30,7 @@ async function execute(value: RepositoryEditRequest, token: string, signal: Abor
   emit('changed', response.result, response.messages.join(' '));
 }
 async function prepare(value: RepositoryEditRequest) {
-  if (blocked.value) return;
+  if (blocked.value || props.disabled) return;
   controller = new AbortController(); const signal = controller.signal; busy.value = true; error.value = ''; options.value = false;
   try {
     const response = await api.prepare(value, signal);
@@ -55,16 +55,16 @@ onUnmounted(() => controller?.abort());
 </script>
 <template>
   <form class="repository-commit-form" :aria-busy="busy" @submit.prevent="prepare(make('commit'))" @keydown.esc="options = false">
-    <label>{{ i18n.t('commitMessage') }}<input v-model="subject" required maxlength="200" :disabled="blocked" :placeholder="i18n.t('editSubject')" /></label>
-    <label>{{ i18n.t('editDescription') }}<textarea v-model="description" maxlength="10000" rows="3" :disabled="blocked" /></label>
+    <label>{{ i18n.t('commitMessage') }}<input v-model="subject" required maxlength="200" :disabled="blocked || disabled" :placeholder="i18n.t('editSubject')" /></label>
+    <label>{{ i18n.t('editDescription') }}<textarea v-model="description" maxlength="10000" rows="3" :disabled="blocked || disabled" /></label>
     <p v-if="error" role="alert">{{ error }}</p><p v-if="busy" role="status">{{ i18n.t('editBusy') }}</p>
     <div class="commit-controls">
-      <label class="amend-option"><input v-model="amend" type="checkbox" :disabled="blocked || !hasCommits" /> Amend</label>
+      <label class="amend-option"><input v-model="amend" type="checkbox" :disabled="blocked || disabled || !hasCommits" /> Amend</label>
       <span v-if="amend" class="amend-warning">{{ i18n.t('editAmendWarning') }}</span>
       <div class="commit-split">
-        <button class="commit-submit" type="submit" :disabled="blocked || !subject.trim() || stagedCount === 0 && !amend">{{ i18n.t(amend ? 'editAmend' : 'editCommit') }} {{ stagedCount }} {{ i18n.t('editFiles') }}</button>
-        <button class="commit-options-toggle" type="button" :disabled="blocked" :aria-expanded="options" :aria-label="i18n.t('editOptions')" @click="options = !options"><MaterialIcon name="expand_more" /></button>
-        <div v-if="options" class="commit-options"><button type="button" :disabled="!subject.trim() || stagedCount === 0 && !amend" @click="prepare(make('commit', [], true))">{{ i18n.t('editCommitPush') }}</button></div>
+        <button class="commit-submit" type="submit" :disabled="blocked || disabled || !subject.trim() || stagedCount === 0 && !amend">{{ i18n.t(amend ? 'editAmend' : 'editCommit') }} {{ stagedCount }} {{ i18n.t('editFiles') }}</button>
+        <button class="commit-options-toggle" type="button" :disabled="blocked || disabled" :aria-expanded="options" :aria-label="i18n.t('editOptions')" @click="options = !options"><MaterialIcon name="expand_more" /></button>
+        <div v-if="options" class="commit-options"><button type="button" :disabled="disabled || !subject.trim() || stagedCount === 0 && !amend" @click="prepare(make('commit', [], true))">{{ i18n.t('editCommitPush') }}</button></div>
       </div>
     </div>
   </form>
